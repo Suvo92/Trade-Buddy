@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Trade Buddy - Online</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📈</text></svg>">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         * {
@@ -68,6 +69,12 @@
 
         .auth-btn:hover {
             transform: translateY(-2px);
+        }
+
+        .auth-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
         }
 
         .auth-toggle {
@@ -238,11 +245,6 @@
             box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
         }
 
-        textarea {
-            resize: vertical;
-            min-height: 100px;
-        }
-
         .btn {
             padding: 12px 30px;
             border: none;
@@ -274,31 +276,6 @@
             transform: translateY(-2px);
         }
 
-        .btn-danger {
-            background: #dc3545;
-            color: white;
-        }
-
-        .btn-danger:hover {
-            background: #c82333;
-            transform: translateY(-2px);
-        }
-
-        .btn-success {
-            background: #28a745;
-            color: white;
-        }
-
-        .btn-success:hover {
-            background: #218838;
-            transform: translateY(-2px);
-        }
-
-        .btn-small {
-            padding: 8px 16px;
-            font-size: 14px;
-        }
-
         .notification {
             position: fixed;
             top: 20px;
@@ -309,6 +286,7 @@
             font-weight: 500;
             z-index: 1000;
             animation: slideIn 0.3s ease;
+            max-width: 400px;
         }
 
         .notification.success {
@@ -335,9 +313,43 @@
             color: #495057;
         }
 
+        .status-box {
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            font-weight: 500;
+        }
+
+        .status-success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .status-warning {
+            background: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeaa7;
+        }
+
+        .status-error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f1b0b7;
+        }
+
         @media (max-width: 768px) {
+            body {
+                padding: 10px;
+            }
+
+            .auth-container {
+                margin: 50px auto;
+                padding: 30px;
+            }
+
             .container {
-                margin: 10px;
+                margin: 0;
             }
 
             .nav-tabs {
@@ -391,80 +403,87 @@
 
         <div class="nav-tabs">
             <button class="nav-tab active" data-tab="dashboard">Dashboard</button>
-            <button class="nav-tab" data-tab="add-trade">Add Trade</button>
-            <button class="nav-tab" data-tab="backup">Settings</button>
+            <button class="nav-tab" data-tab="test">Test Features</button>
+            <button class="nav-tab" data-tab="status">Status</button>
         </div>
 
         <!-- Dashboard Tab -->
         <div id="dashboard" class="tab-content active">
             <div class="form-section">
-                <h3>📊 Quick Overview</h3>
+                <h3>🎉 Welcome to Your Online Trading Journal!</h3>
+                <div class="status-success">
+                    <strong>✅ Authentication Working!</strong><br>
+                    You successfully signed in. Your trading journal is now connected to the cloud!
+                </div>
                 <div class="empty-state">
-                    <h3>Welcome to your online trading journal!</h3>
-                    <p>Your data is now securely stored in the cloud with 1GB photo storage.</p>
-                    <p>Start by adding your first account and trade.</p>
+                    <h3>Your journal is ready!</h3>
+                    <p>🌟 <strong>1GB photo storage</strong> - Upload charts and screenshots</p>
+                    <p>🔄 <strong>Multi-device sync</strong> - Access from phone, tablet, computer</p>
+                    <p>🔒 <strong>Secure & private</strong> - Only you can see your data</p>
+                    <p>☁️ <strong>Cloud backup</strong> - Never lose your trades again</p>
+                    <br>
+                    <p><strong>Next step:</strong> I'll help you add all the advanced features from your original journal!</p>
                 </div>
             </div>
         </div>
 
-        <!-- Add Trade Tab -->
-        <div id="add-trade" class="tab-content">
+        <!-- Test Tab -->
+        <div id="test" class="tab-content">
             <div class="form-section">
-                <h3>📝 Add New Trade</h3>
-                <form id="trade-form">
+                <h3>🧪 Test Database Connection</h3>
+                <div id="test-status" class="status-box status-warning">
+                    <strong>Ready to test...</strong><br>
+                    Click the button below to test if your database is working properly.
+                </div>
+                <button class="btn btn-primary" onclick="testDatabase()">🔍 Test Database Connection</button>
+                <button class="btn btn-secondary" onclick="testStorage()">📸 Test Photo Storage</button>
+            </div>
+            
+            <div class="form-section">
+                <h3>📝 Quick Trade Test</h3>
+                <form id="test-trade-form">
                     <div class="form-grid">
                         <div class="form-group">
-                            <label for="symbol">Symbol *</label>
-                            <input type="text" id="symbol" placeholder="e.g., AAPL, EURUSD" required>
+                            <label for="test-symbol">Symbol</label>
+                            <input type="text" id="test-symbol" placeholder="AAPL" value="AAPL">
                         </div>
                         <div class="form-group">
-                            <label for="side">Side *</label>
-                            <select id="side" required>
-                                <option value="">Select...</option>
+                            <label for="test-side">Side</label>
+                            <select id="test-side">
                                 <option value="Long">Long</option>
                                 <option value="Short">Short</option>
                             </select>
                         </div>
                         <div class="form-group">
-                            <label for="entry-price">Entry Price *</label>
-                            <input type="number" id="entry-price" step="0.00001" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="exit-price">Exit Price</label>
-                            <input type="number" id="exit-price" step="0.00001">
+                            <label for="test-price">Price</label>
+                            <input type="number" id="test-price" step="0.01" placeholder="150.00" value="150.00">
                         </div>
                     </div>
-                    <button type="submit" class="btn btn-primary">💾 Save Trade</button>
+                    <button type="submit" class="btn btn-primary">💾 Save Test Trade</button>
                 </form>
+                <div id="trade-test-result"></div>
             </div>
         </div>
 
-        <!-- Settings Tab -->
-        <div id="backup" class="tab-content">
+        <!-- Status Tab -->
+        <div id="status" class="tab-content">
             <div class="form-section">
-                <h3>⚙️ Setup Instructions</h3>
-                <div style="padding: 20px; background: #e7f3ff; border-radius: 10px; margin-bottom: 20px;">
-                    <h4>🚀 Getting Started</h4>
-                    <ol style="margin: 15px 0; margin-left: 20px;">
-                        <li><strong>Set up Supabase:</strong> Create a free account at supabase.com</li>
-                        <li><strong>Run the SQL:</strong> Copy the database schema and run it in your Supabase SQL editor</li>
-                        <li><strong>Update credentials:</strong> Replace YOUR_SUPABASE_URL and YOUR_SUPABASE_ANON_KEY in the code</li>
-                        <li><strong>Deploy:</strong> Upload to Vercel for free hosting</li>
-                    </ol>
-                    <p><strong>You'll then have:</strong></p>
-                    <ul style="margin: 10px 0; margin-left: 20px;">
-                        <li>✅ All your original features</li>
-                        <li>✅ 1GB photo storage</li>
-                        <li>✅ Multi-device access</li>
-                        <li>✅ Automatic cloud backups</li>
-                        <li>✅ User authentication</li>
-                    </ul>
+                <h3>🔧 System Status</h3>
+                <div id="connection-status">
+                    <div class="status-box status-success">
+                        <strong>✅ Supabase Connection:</strong> Connected successfully
+                    </div>
+                    <div class="status-box status-success">
+                        <strong>✅ Authentication:</strong> Working properly
+                    </div>
+                    <div class="status-box status-warning">
+                        <strong>⏳ Database Tables:</strong> <span id="db-status">Checking...</span>
+                    </div>
+                    <div class="status-box status-warning">
+                        <strong>⏳ Storage Bucket:</strong> <span id="storage-status">Checking...</span>
+                    </div>
                 </div>
-                
-                <div class="form-section">
-                    <h3>🔧 Configuration Status</h3>
-                    <p id="config-status">Checking configuration...</p>
-                </div>
+                <button class="btn btn-primary" onclick="checkSystemStatus()">🔄 Refresh Status</button>
             </div>
         </div>
     </div>
@@ -472,7 +491,7 @@
     <script>
         // Configuration - Replace with your Supabase credentials
         const SUPABASE_URL = 'https://drmgbjqdlmmtvkdxyqxf.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRybWdianFkbG1tdHZrZHh5cXhmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQyMjUwMTEsImV4cCI6MjA2OTgwMTAxMX0.B7hZkBv7Yv6cWjjM8wYo2VWSx8paLzv7k9WSQXjehdM';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRybWdianFkbG1tdHZrZHh5cXhmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQyMjUwMTEsImV4cCI6MjA2OTgwMTAxMX0.B7hZkBv7Yv6cWjjM8wYo2VWSx8paLzv7k9WSQXjehdM';
 
         // Global variables
         let supabase = null;
@@ -481,33 +500,12 @@ const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
 
         // Initialize the application
         document.addEventListener('DOMContentLoaded', function() {
-            console.log('App initializing...');
+            console.log('Trade Buddy initializing...');
             
-            // Check if credentials are configured
-            if (SUPABASE_URL === 'YOUR_SUPABASE_URL' || SUPABASE_ANON_KEY === 'YOUR_SUPABASE_ANON_KEY') {
-                document.getElementById('config-status').innerHTML = `
-                    <div style="color: #dc3545; font-weight: 600;">
-                        ⚠️ Configuration Required
-                    </div>
-                    <p style="margin-top: 10px;">
-                        Please update the SUPABASE_URL and SUPABASE_ANON_KEY in the JavaScript code with your actual Supabase credentials.
-                    </p>
-                `;
-                showTab('backup');
-                return;
-            }
-
             try {
                 // Initialize Supabase client
                 supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-                document.getElementById('config-status').innerHTML = `
-                    <div style="color: #28a745; font-weight: 600;">
-                        ✅ Configuration Valid
-                    </div>
-                    <p style="margin-top: 10px;">
-                        Supabase connection established. You can now use all features!
-                    </p>
-                `;
+                console.log('✅ Supabase client initialized');
                 
                 // Check initial auth state
                 checkAuthState();
@@ -519,43 +517,43 @@ const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
                 setupEventListeners();
                 
             } catch (error) {
-                console.error('Error initializing Supabase:', error);
-                document.getElementById('config-status').innerHTML = `
-                    <div style="color: #dc3545; font-weight: 600;">
-                        ❌ Configuration Error
-                    </div>
-                    <p style="margin-top: 10px;">
-                        Error connecting to Supabase: ${error.message}
-                    </p>
-                `;
+                console.error('❌ Error initializing app:', error);
+                showNotification('Error initializing app: ' + error.message, 'error');
             }
         });
 
         // Authentication functions
         async function checkAuthState() {
             try {
+                console.log('Checking authentication state...');
                 const { data: { session } } = await supabase.auth.getSession();
                 if (session) {
+                    console.log('✅ User already logged in');
                     user = session.user;
                     await initializeApp();
                 } else {
+                    console.log('ℹ️ No active session, showing login');
                     showAuthContainer();
                 }
             } catch (error) {
-                console.error('Error checking auth state:', error);
+                console.error('❌ Error checking auth state:', error);
                 showAuthContainer();
             }
         }
 
         function setupAuthListeners() {
             // Auth form submission
-            document.getElementById('auth-form').addEventListener('submit', handleAuth);
+            document.getElementById('auth-form').addEventListener('submit', function(e) {
+                e.preventDefault();
+                handleAuth();
+            });
             
             // Toggle between sign in and sign up
             document.getElementById('auth-toggle-link').addEventListener('click', toggleAuthMode);
             
             // Listen for auth state changes
             supabase.auth.onAuthStateChange(async (event, session) => {
+                console.log('Auth state changed:', event);
                 if (event === 'SIGNED_IN' && session) {
                     user = session.user;
                     await initializeApp();
@@ -566,10 +564,8 @@ const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
             });
         }
 
-        async function handleAuth(e) {
-            e.preventDefault();
-            
-            const email = document.getElementById('auth-email').value;
+        async function handleAuth() {
+            const email = document.getElementById('auth-email').value.trim();
             const password = document.getElementById('auth-password').value;
             
             if (!email || !password) {
@@ -577,11 +573,19 @@ const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
                 return;
             }
             
-            showLoading(true);
+            if (password.length < 6) {
+                showNotification('Password must be at least 6 characters', 'error');
+                return;
+            }
+            
+            const submitBtn = document.getElementById('auth-submit');
+            submitBtn.disabled = true;
+            submitBtn.textContent = isSignUp ? 'Signing up...' : 'Signing in...';
             
             try {
                 let result;
                 if (isSignUp) {
+                    console.log('Attempting to sign up user...');
                     result = await supabase.auth.signUp({
                         email: email,
                         password: password
@@ -590,43 +594,54 @@ const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
                     if (result.error) throw result.error;
                     
                     if (result.data?.user && !result.data.session) {
-                        showNotification('Check your email for the confirmation link!', 'success');
-                        showLoading(false);
+                        showNotification('✅ Check your email for the confirmation link!', 'success');
+                        submitBtn.disabled = false;
+                        submitBtn.textContent = 'Sign Up';
                         return;
                     }
+                    
+                    showNotification('✅ Account created successfully!', 'success');
                 } else {
+                    console.log('Attempting to sign in user...');
                     result = await supabase.auth.signInWithPassword({
                         email: email,
                         password: password
                     });
                     
                     if (result.error) throw result.error;
+                    showNotification('✅ Welcome back!', 'success');
                 }
                 
-                if (result.data?.user) {
-                    user = result.data.user;
-                    // initializeApp will be called by the auth state change listener
-                }
             } catch (error) {
-                console.error('Auth error:', error);
-                showNotification(error.message, 'error');
-                showLoading(false);
+                console.error('❌ Auth error:', error);
+                let errorMessage = error.message;
+                
+                // Provide user-friendly error messages
+                if (errorMessage.includes('Invalid login credentials')) {
+                    errorMessage = 'Invalid email or password. Please try again.';
+                } else if (errorMessage.includes('Email not confirmed')) {
+                    errorMessage = 'Please check your email and click the confirmation link first.';
+                } else if (errorMessage.includes('signup is disabled')) {
+                    errorMessage = 'New signups are currently disabled. Please contact support.';
+                }
+                
+                showNotification(errorMessage, 'error');
+                submitBtn.disabled = false;
+                submitBtn.textContent = isSignUp ? 'Sign Up' : 'Sign In';
             }
         }
 
         function toggleAuthMode() {
             isSignUp = !isSignUp;
             const submitBtn = document.getElementById('auth-submit');
-            const toggleLink = document.getElementById('auth-toggle-link');
+            const toggleDiv = document.querySelector('.auth-toggle');
             
             if (isSignUp) {
                 submitBtn.textContent = 'Sign Up';
-                toggleLink.textContent = 'Sign in';
-                document.querySelector('.auth-toggle').innerHTML = 'Already have an account? <a id="auth-toggle-link">Sign in</a>';
+                toggleDiv.innerHTML = 'Already have an account? <a id="auth-toggle-link">Sign in</a>';
             } else {
                 submitBtn.textContent = 'Sign In';
-                toggleLink.textContent = 'Sign up';
-                document.querySelector('.auth-toggle').innerHTML = 'Don\'t have an account? <a id="auth-toggle-link">Sign up</a>';
+                toggleDiv.innerHTML = 'Don\'t have an account? <a id="auth-toggle-link">Sign up</a>';
             }
             
             // Re-attach event listener
@@ -635,10 +650,11 @@ const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
 
         async function signOut() {
             try {
+                console.log('Signing out user...');
                 await supabase.auth.signOut();
-                // The auth state change listener will handle showing the auth container
+                showNotification('👋 Signed out successfully', 'success');
             } catch (error) {
-                console.error('Error signing out:', error);
+                console.error('❌ Error signing out:', error);
                 showNotification('Error signing out', 'error');
             }
         }
@@ -672,14 +688,17 @@ const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
             showLoading(true);
             
             try {
+                console.log('✅ Initializing app for user:', user.email);
                 showMainContainer();
                 showLoading(false);
                 
-                showNotification('Welcome to your online trading journal!', 'success');
-                console.log('App initialized successfully');
+                // Check system status
+                setTimeout(checkSystemStatus, 1000);
+                
+                showNotification('🎉 Welcome to your online trading journal!', 'success');
             } catch (error) {
-                console.error('Error initializing app:', error);
-                showNotification('Error loading data', 'error');
+                console.error('❌ Error initializing app:', error);
+                showNotification('Error loading app', 'error');
                 showLoading(false);
             }
         }
@@ -693,16 +712,14 @@ const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
                 });
             });
 
-            // Form submission
-            document.getElementById('trade-form').addEventListener('submit', function(e) {
+            // Test trade form
+            document.getElementById('test-trade-form').addEventListener('submit', function(e) {
                 e.preventDefault();
-                saveTrade();
+                saveTestTrade();
             });
         }
 
         function showTab(tabId) {
-            console.log('Switching to tab:', tabId);
-            
             document.querySelectorAll('.tab-content').forEach(tab => {
                 tab.classList.remove('active');
             });
@@ -720,32 +737,78 @@ const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
             }
         }
 
-        async function saveTrade() {
-            console.log('Saving trade...');
+        async function testDatabase() {
+            const statusDiv = document.getElementById('test-status');
+            statusDiv.className = 'status-box status-warning';
+            statusDiv.innerHTML = '<strong>Testing database connection...</strong>';
+
+            try {
+                // Test database connection by checking if trades table exists
+                const { data, error } = await supabase
+                    .from('trades')
+                    .select('id')
+                    .limit(1);
+
+                if (error) {
+                    throw error;
+                }
+
+                statusDiv.className = 'status-box status-success';
+                statusDiv.innerHTML = '<strong>✅ Database Test Passed!</strong><br>Successfully connected to your trades table.';
+                showNotification('Database connection working perfectly!', 'success');
+            } catch (error) {
+                console.error('Database test failed:', error);
+                statusDiv.className = 'status-box status-error';
+                statusDiv.innerHTML = `<strong>❌ Database Test Failed</strong><br>Error: ${error.message}`;
+                showNotification('Database test failed: ' + error.message, 'error');
+            }
+        }
+
+        async function testStorage() {
+            try {
+                showNotification('Testing photo storage...', 'success');
+                
+                // Test storage by listing buckets
+                const { data, error } = await supabase.storage.listBuckets();
+                
+                if (error) throw error;
+                
+                const hasTradePhotos = data.some(bucket => bucket.name === 'trade-photos');
+                
+                if (hasTradePhotos) {
+                    showNotification('✅ Photo storage is working!', 'success');
+                } else {
+                    showNotification('⚠️ Photo storage bucket not found', 'error');
+                }
+            } catch (error) {
+                console.error('Storage test failed:', error);
+                showNotification('Storage test failed: ' + error.message, 'error');
+            }
+        }
+
+        async function saveTestTrade() {
+            const symbol = document.getElementById('test-symbol').value.trim().toUpperCase();
+            const side = document.getElementById('test-side').value;
+            const price = parseFloat(document.getElementById('test-price').value);
             
-            const symbol = document.getElementById('symbol').value.trim().toUpperCase();
-            const side = document.getElementById('side').value;
-            const entryPrice = parseFloat(document.getElementById('entry-price').value);
-            const exitPrice = document.getElementById('exit-price').value ? parseFloat(document.getElementById('exit-price').value) : null;
+            const resultDiv = document.getElementById('trade-test-result');
             
-            if (!symbol || !side || !entryPrice) {
-                showNotification('Please fill in required fields', 'error');
+            if (!symbol || !price) {
+                showNotification('Please fill in all fields', 'error');
                 return;
             }
             
             try {
-                // This is a simplified version - you'd expand this with your full trade object
                 const trade = {
                     user_id: user.id,
                     symbol: symbol,
                     side: side,
-                    entry_price: entryPrice,
-                    exit_price: exitPrice,
-                    date: new Date().toISOString(),
+                    entry_price: price,
                     quantity: 1,
+                    date: new Date().toISOString(),
                     pnl: 0,
                     pnl_percent: 0,
-                    status: exitPrice ? 'Closed' : 'Open'
+                    status: 'Open'
                 };
 
                 const { data, error } = await supabase
@@ -756,15 +819,61 @@ const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
                 
                 if (error) throw error;
                 
-                document.getElementById('trade-form').reset();
-                showNotification('Trade saved successfully!', 'success');
+                resultDiv.innerHTML = `
+                    <div class="status-box status-success" style="margin-top: 15px;">
+                        <strong>✅ Test Trade Saved!</strong><br>
+                        Trade ID: ${data.id}<br>
+                        ${symbol} ${side} at $${price}
+                    </div>
+                `;
+                
+                document.getElementById('test-trade-form').reset();
+                document.getElementById('test-symbol').value = 'AAPL';
+                document.getElementById('test-price').value = '150.00';
+                
+                showNotification('Test trade saved successfully!', 'success');
             } catch (error) {
-                console.error('Error saving trade:', error);
+                console.error('Error saving test trade:', error);
+                resultDiv.innerHTML = `
+                    <div class="status-box status-error" style="margin-top: 15px;">
+                        <strong>❌ Failed to save trade</strong><br>
+                        Error: ${error.message}
+                    </div>
+                `;
                 showNotification('Error saving trade: ' + error.message, 'error');
             }
         }
 
+        async function checkSystemStatus() {
+            console.log('Checking system status...');
+            
+            // Check database tables
+            try {
+                const { data, error } = await supabase.from('trades').select('id').limit(1);
+                document.getElementById('db-status').textContent = error ? 'Error: ' + error.message : 'Working ✅';
+                document.getElementById('db-status').parentElement.className = error ? 'status-box status-error' : 'status-box status-success';
+            } catch (error) {
+                document.getElementById('db-status').textContent = 'Error: ' + error.message;
+                document.getElementById('db-status').parentElement.className = 'status-box status-error';
+            }
+            
+            // Check storage
+            try {
+                const { data, error } = await supabase.storage.listBuckets();
+                const hasPhotoBucket = data && data.some(bucket => bucket.name === 'trade-photos');
+                document.getElementById('storage-status').textContent = error ? 'Error: ' + error.message : (hasPhotoBucket ? 'Working ✅' : 'Bucket not found ⚠️');
+                document.getElementById('storage-status').parentElement.className = error ? 'status-box status-error' : (hasPhotoBucket ? 'status-box status-success' : 'status-box status-warning');
+            } catch (error) {
+                document.getElementById('storage-status').textContent = 'Error: ' + error.message;
+                document.getElementById('storage-status').parentElement.className = 'status-box status-error';
+            }
+        }
+
         function showNotification(message, type = 'success') {
+            // Remove existing notifications
+            const existing = document.querySelectorAll('.notification');
+            existing.forEach(n => n.remove());
+            
             const notification = document.createElement('div');
             notification.className = `notification ${type}`;
             notification.textContent = message;
@@ -772,11 +881,14 @@ const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
 
             setTimeout(() => {
                 notification.remove();
-            }, 3000);
+            }, 5000);
         }
 
         // Global functions for onclick events
         window.signOut = signOut;
+        window.testDatabase = testDatabase;
+        window.testStorage = testStorage;
+        window.checkSystemStatus = checkSystemStatus;
     </script>
 </body>
 </html>
