@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Trade Buddy - Online</title>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📈</text></svg>">
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
     <style>
         * {
             margin: 0;
@@ -424,7 +424,7 @@
                     <p>🔒 <strong>Secure & private</strong> - Only you can see your data</p>
                     <p>☁️ <strong>Cloud backup</strong> - Never lose your trades again</p>
                     <br>
-                    <p><strong>Next step:</strong> I'll help you add all the advanced features from your original journal!</p>
+                    <p><strong>Next step:</strong> Test your photo storage, then I'll help you add all the advanced features!</p>
                 </div>
             </div>
         </div>
@@ -432,38 +432,13 @@
         <!-- Test Tab -->
         <div id="test" class="tab-content">
             <div class="form-section">
-                <h3>🧪 Test Database Connection</h3>
+                <h3>🧪 Test Database & Storage</h3>
                 <div id="test-status" class="status-box status-warning">
                     <strong>Ready to test...</strong><br>
-                    Click the button below to test if your database is working properly.
+                    Click the buttons below to test your database and photo storage.
                 </div>
                 <button class="btn btn-primary" id="test-database-btn">🔍 Test Database Connection</button>
                 <button class="btn btn-secondary" id="test-storage-btn">📸 Test Photo Storage</button>
-            </div>
-            
-            <div class="form-section">
-                <h3>📝 Quick Trade Test</h3>
-                <form id="test-trade-form">
-                    <div class="form-grid">
-                        <div class="form-group">
-                            <label for="test-symbol">Symbol</label>
-                            <input type="text" id="test-symbol" placeholder="AAPL" value="AAPL">
-                        </div>
-                        <div class="form-group">
-                            <label for="test-side">Side</label>
-                            <select id="test-side">
-                                <option value="Long">Long</option>
-                                <option value="Short">Short</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label for="test-price">Price</label>
-                            <input type="number" id="test-price" step="0.01" placeholder="150.00" value="150.00">
-                        </div>
-                    </div>
-                    <button type="submit" class="btn btn-primary">💾 Save Test Trade</button>
-                </form>
-                <div id="trade-test-result"></div>
             </div>
         </div>
 
@@ -490,448 +465,257 @@
         </div>
     </div>
 
-    <script>
-        // Configuration - Replace with your Supabase credentials
-        const SUPABASE_URL = 'https://drmgbjqdlmmtvkdxyqxf.supabase.co';
-        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRybWdianFkbG1tdHZrZHh5cXhmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQyMjUwMTEsImV4cCI6MjA2OTgwMTAxMX0.B7hZkBv7Yv6cWjjM8wYo2VWSx8paLzv7k9WSQXjehdM';
+<script>
+// Configuration - YOUR CREDENTIALS
+const SUPABASE_URL = 'https://drmgbjqdlmmtvkdxyqxf.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRybWdianFkbG1tdHZrZHh5cXhmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQyMjUwMTEsImV4cCI6MjA2OTgwMTAxMX0.B7hZkBv7Yv6cWjjM8wYo2VWSx8paLzv7k9WSQXjehdM';
 
-        // Global variables
-        let supabase = null;
-        let user = null;
-        let isSignUp = false;
+// Global variables
+let supabaseClient = null;
+let user = null;
+let isSignUp = false;
 
-        // Initialize the application
-        document.addEventListener('DOMContentLoaded', function() {
-            console.log('Trade Buddy initializing...');
-            
-            try {
-                // Initialize Supabase client
-                supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-                console.log('✅ Supabase client initialized');
-                
-                // Check initial auth state
-                checkAuthState();
-                
-                // Set up auth listeners
-                setupAuthListeners();
-                
-                // Set up event listeners
-                setupEventListeners();
-                
-            } catch (error) {
-                console.error('❌ Error initializing app:', error);
-                showNotification('Error initializing app: ' + error.message, 'error');
-            }
-        });
+// GLOBAL FUNCTIONS - Defined immediately and available everywhere
+function showNotification(message, type = 'success') {
+    const existing = document.querySelectorAll('.notification');
+    existing.forEach(n => n.remove());
+    
+    const notification = document.createElement('div');
+    notification.className = `notification ${type}`;
+    notification.textContent = message;
+    document.body.appendChild(notification);
 
-        // Authentication functions
-        async function checkAuthState() {
-            try {
-                console.log('Checking authentication state...');
-                const { data: { session } } = await supabase.auth.getSession();
-                if (session) {
-                    console.log('✅ User already logged in');
-                    user = session.user;
-                    await initializeApp();
-                } else {
-                    console.log('ℹ️ No active session, showing login');
-                    showAuthContainer();
-                }
-            } catch (error) {
-                console.error('❌ Error checking auth state:', error);
-                showAuthContainer();
-            }
+    setTimeout(() => notification.remove(), 5000);
+}
+
+// Main initialization
+async function initApp() {
+    console.log('🚀 Initializing Trade Buddy...');
+    
+    // Wait for Supabase to load
+    while (!window.supabase) {
+        await new Promise(resolve => setTimeout(resolve, 50));
+    }
+    
+    // Initialize Supabase
+    supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    console.log('✅ Supabase connected');
+    
+    // Set up authentication
+    setupAuth();
+    
+    // Check if user is already logged in
+    const { data: { session } } = await supabaseClient.auth.getSession();
+    if (session) {
+        user = session.user;
+        showMainApp();
+    } else {
+        showAuthScreen();
+    }
+}
+
+function setupAuth() {
+    // Form submission
+    document.getElementById('auth-form-element').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        const email = document.getElementById('auth-email').value.trim();
+        const password = document.getElementById('auth-password').value;
+        
+        if (!email || !password) {
+            showNotification('Please fill in all fields', 'error');
+            return;
         }
-
-        function setupAuthListeners() {
-            // Auth form submission
-            document.getElementById('auth-form').addEventListener('submit', function(e) {
-                e.preventDefault();
-                handleAuth();
-            });
-            
-            // Toggle between sign in and sign up
-            document.getElementById('auth-toggle-link').addEventListener('click', toggleAuthMode);
-            
-            // Listen for auth state changes
-            supabase.auth.onAuthStateChange(async (event, session) => {
-                console.log('Auth state changed:', event);
-                if (event === 'SIGNED_IN' && session) {
-                    user = session.user;
-                    await initializeApp();
-                } else if (event === 'SIGNED_OUT') {
-                    user = null;
-                    showAuthContainer();
-                }
-            });
-        }
-
-        async function handleAuth() {
-            const email = document.getElementById('auth-email').value.trim();
-            const password = document.getElementById('auth-password').value;
-            
-            if (!email || !password) {
-                showNotification('Please fill in all fields', 'error');
-                return;
-            }
-            
-            if (password.length < 6) {
-                showNotification('Password must be at least 6 characters', 'error');
-                return;
-            }
-            
-            const submitBtn = document.getElementById('auth-submit');
-            submitBtn.disabled = true;
-            submitBtn.textContent = isSignUp ? 'Signing up...' : 'Signing in...';
-            
-            try {
-                let result;
-                if (isSignUp) {
-                    console.log('Attempting to sign up user...');
-                    result = await supabase.auth.signUp({
-                        email: email,
-                        password: password
-                    });
-                    
-                    if (result.error) throw result.error;
-                    
-                    if (result.data?.user && !result.data.session) {
-                        showNotification('✅ Check your email for the confirmation link!', 'success');
-                        submitBtn.disabled = false;
-                        submitBtn.textContent = 'Sign Up';
-                        return;
-                    }
-                    
-                    showNotification('✅ Account created successfully!', 'success');
-                } else {
-                    console.log('Attempting to sign in user...');
-                    result = await supabase.auth.signInWithPassword({
-                        email: email,
-                        password: password
-                    });
-                    
-                    if (result.error) throw result.error;
-                    showNotification('✅ Welcome back!', 'success');
-                }
-                
-            } catch (error) {
-                console.error('❌ Auth error:', error);
-                let errorMessage = error.message;
-                
-                // Provide user-friendly error messages
-                if (errorMessage.includes('Invalid login credentials')) {
-                    errorMessage = 'Invalid email or password. Please try again.';
-                } else if (errorMessage.includes('Email not confirmed')) {
-                    errorMessage = 'Please check your email and click the confirmation link first.';
-                } else if (errorMessage.includes('signup is disabled')) {
-                    errorMessage = 'New signups are currently disabled. Please contact support.';
-                }
-                
-                showNotification(errorMessage, 'error');
-                submitBtn.disabled = false;
-                submitBtn.textContent = isSignUp ? 'Sign Up' : 'Sign In';
-            }
-        }
-
-        function toggleAuthMode() {
-            isSignUp = !isSignUp;
-            const submitBtn = document.getElementById('auth-submit');
-            const toggleDiv = document.querySelector('.auth-toggle');
-            
+        
+        const submitBtn = document.getElementById('auth-submit');
+        submitBtn.disabled = true;
+        submitBtn.textContent = isSignUp ? 'Signing up...' : 'Signing in...';
+        
+        try {
+            let result;
             if (isSignUp) {
-                submitBtn.textContent = 'Sign Up';
-                toggleDiv.innerHTML = 'Already have an account? <a id="auth-toggle-link">Sign in</a>';
-            } else {
-                submitBtn.textContent = 'Sign In';
-                toggleDiv.innerHTML = 'Don\'t have an account? <a id="auth-toggle-link">Sign up</a>';
-            }
-            
-            // Re-attach event listener
-            document.getElementById('auth-toggle-link').addEventListener('click', toggleAuthMode);
-        }
-
-        async function signOut() {
-            try {
-                console.log('Signing out user...');
-                await supabase.auth.signOut();
-                showNotification('👋 Signed out successfully', 'success');
-            } catch (error) {
-                console.error('❌ Error signing out:', error);
-                showNotification('Error signing out', 'error');
-            }
-        }
-
-        function showAuthContainer() {
-            document.getElementById('auth-container').style.display = 'block';
-            document.getElementById('main-container').style.display = 'none';
-            showLoading(false);
-        }
-
-        function showMainContainer() {
-            document.getElementById('auth-container').style.display = 'none';
-            document.getElementById('main-container').style.display = 'block';
-            document.getElementById('user-email').textContent = user?.email || 'Unknown';
-        }
-
-        function showLoading(show) {
-            const authForm = document.getElementById('auth-form');
-            const loading = document.getElementById('loading');
-            
-            if (show) {
-                authForm.style.display = 'none';
-                loading.style.display = 'block';
-            } else {
-                authForm.style.display = 'flex';
-                loading.style.display = 'none';
-            }
-        }
-
-        async function initializeApp() {
-            showLoading(true);
-            
-            try {
-                console.log('✅ Initializing app for user:', user.email);
-                showMainContainer();
-                showLoading(false);
-                
-                // Check system status
-                setTimeout(checkSystemStatus, 1000);
-                
-                showNotification('🎉 Welcome to your online trading journal!', 'success');
-            } catch (error) {
-                console.error('❌ Error initializing app:', error);
-                showNotification('Error loading app', 'error');
-                showLoading(false);
-            }
-        }
-
-        function setupEventListeners() {
-            // Tab switching
-            document.querySelectorAll('.nav-tab').forEach(tab => {
-                tab.addEventListener('click', function() {
-                    const tabId = this.getAttribute('data-tab');
-                    showTab(tabId);
-                });
-            });
-
-            // Test trade form
-            const testTradeForm = document.getElementById('test-trade-form');
-            if (testTradeForm) {
-                testTradeForm.addEventListener('submit', function(e) {
-                    e.preventDefault();
-                    saveTestTrade();
-                });
-            }
-
-            // Add button event listeners with error checking
-            const testDbBtn = document.getElementById('test-database-btn');
-            const testStorageBtn = document.getElementById('test-storage-btn');
-            const refreshBtn = document.getElementById('refresh-status-btn');
-            const logoutBtn = document.getElementById('logout-btn-header');
-
-            if (testDbBtn) {
-                testDbBtn.addEventListener('click', function(e) {
-                    e.preventDefault();
-                    console.log('Test database button clicked');
-                    testDatabase();
-                });
-            }
-
-            if (testStorageBtn) {
-                testStorageBtn.addEventListener('click', function(e) {
-                    e.preventDefault();
-                    console.log('Test storage button clicked');
-                    testPhotoStorage();
-                });
-            }
-
-            if (refreshBtn) {
-                refreshBtn.addEventListener('click', function(e) {
-                    e.preventDefault();
-                    console.log('Refresh status button clicked');
-                    checkSystemStatus();
-                });
-            }
-
-            if (logoutBtn) {
-                logoutBtn.addEventListener('click', function(e) {
-                    e.preventDefault();
-                    console.log('Logout button clicked');
-                    signOut();
-                });
-            }
-
-            console.log('All event listeners set up successfully');
-        }
-
-        function showTab(tabId) {
-            document.querySelectorAll('.tab-content').forEach(tab => {
-                tab.classList.remove('active');
-            });
-            
-            document.querySelectorAll('.nav-tab').forEach(tab => {
-                tab.classList.remove('active');
-            });
-            
-            const activeTab = document.getElementById(tabId);
-            const activeNavTab = document.querySelector(`[data-tab="${tabId}"]`);
-            
-            if (activeTab && activeNavTab) {
-                activeTab.classList.add('active');
-                activeNavTab.classList.add('active');
-            }
-        }
-
-        async function testDatabase() {
-            const statusDiv = document.getElementById('test-status');
-            statusDiv.className = 'status-box status-warning';
-            statusDiv.innerHTML = '<strong>Testing database connection...</strong>';
-
-            try {
-                // Test database connection by checking if trades table exists
-                const { data, error } = await supabase
-                    .from('trades')
-                    .select('id')
-                    .limit(1);
-
-                if (error) {
-                    throw error;
+                result = await supabaseClient.auth.signUp({ email, password });
+                if (result.data?.user && !result.data.session) {
+                    showNotification('✅ Check your email for confirmation!', 'success');
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = 'Sign Up';
+                    return;
                 }
+            } else {
+                result = await supabaseClient.auth.signInWithPassword({ email, password });
+            }
+            
+            if (result.error) throw result.error;
+            
+            user = result.data.user;
+            showMainApp();
+            
+        } catch (error) {
+            console.error('Auth error:', error);
+            showNotification(error.message, 'error');
+            submitBtn.disabled = false;
+            submitBtn.textContent = isSignUp ? 'Sign Up' : 'Sign In';
+        }
+    });
+    
+    // Toggle auth mode
+    document.getElementById('auth-toggle-link').addEventListener('click', () => {
+        isSignUp = !isSignUp;
+        const submitBtn = document.getElementById('auth-submit');
+        const toggleDiv = document.querySelector('.auth-toggle');
+        
+        if (isSignUp) {
+            submitBtn.textContent = 'Sign Up';
+            toggleDiv.innerHTML = 'Already have an account? <a id="auth-toggle-link">Sign in</a>';
+        } else {
+            submitBtn.textContent = 'Sign In';
+            toggleDiv.innerHTML = 'Don\'t have an account? <a id="auth-toggle-link">Sign up</a>';
+        }
+        
+        document.getElementById('auth-toggle-link').addEventListener('click', arguments.callee);
+    });
+    
+    // Auth state changes
+    supabaseClient.auth.onAuthStateChange((event, session) => {
+        if (event === 'SIGNED_OUT') {
+            user = null;
+            showAuthScreen();
+        }
+    });
+}
 
-                statusDiv.className = 'status-box status-success';
-                statusDiv.innerHTML = '<strong>✅ Database Test Passed!</strong><br>Successfully connected to your trades table.';
-                showNotification('Database connection working perfectly!', 'success');
-            } catch (error) {
-                console.error('Database test failed:', error);
-                statusDiv.className = 'status-box status-error';
-                statusDiv.innerHTML = `<strong>❌ Database Test Failed</strong><br>Error: ${error.message}`;
-                showNotification('Database test failed: ' + error.message, 'error');
+function showAuthScreen() {
+    document.getElementById('auth-container').style.display = 'block';
+    document.getElementById('main-container').style.display = 'none';
+}
+
+function showMainApp() {
+    document.getElementById('auth-container').style.display = 'none';
+    document.getElementById('main-container').style.display = 'block';
+    document.getElementById('user-email').textContent = user?.email || 'Unknown';
+    
+    setupMainAppButtons();
+    showNotification('🎉 Welcome to your online trading journal!', 'success');
+}
+
+function setupMainAppButtons() {
+    // Tab switching
+    document.querySelectorAll('.nav-tab').forEach(tab => {
+        tab.addEventListener('click', function() {
+            const tabId = this.getAttribute('data-tab');
+            
+            document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+            
+            document.getElementById(tabId).classList.add('active');
+            this.classList.add('active');
+        });
+    });
+    
+    // Test buttons
+    document.getElementById('test-database-btn').addEventListener('click', async () => {
+        console.log('Testing database...');
+        const statusDiv = document.getElementById('test-status');
+        statusDiv.className = 'status-box status-warning';
+        statusDiv.innerHTML = '<strong>Testing database...</strong>';
+        
+        try {
+            const { data, error } = await supabaseClient.from('trades').select('id').limit(1);
+            if (error) throw error;
+            
+            statusDiv.className = 'status-box status-success';
+            statusDiv.innerHTML = '<strong>✅ Database Test Passed!</strong><br>Connected to trades table successfully.';
+            showNotification('Database connection working!', 'success');
+        } catch (error) {
+            statusDiv.className = 'status-box status-error';
+            statusDiv.innerHTML = `<strong>❌ Database Test Failed</strong><br>Error: ${error.message}`;
+            showNotification('Database test failed: ' + error.message, 'error');
+        }
+    });
+    
+    document.getElementById('test-storage-btn').addEventListener('click', async () => {
+        console.log('Testing photo storage...');
+        showNotification('Testing photo storage...', 'success');
+        
+        try {
+            // Create test image
+            const canvas = document.createElement('canvas');
+            canvas.width = 10;
+            canvas.height = 10;
+            const ctx = canvas.getContext('2d');
+            ctx.fillStyle = 'red';
+            ctx.fillRect(0, 0, 10, 10);
+            
+            const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
+            const testPath = `${user.id}/test-${Date.now()}.png`;
+            
+            console.log('Uploading to:', testPath);
+            
+            const { data, error } = await supabaseClient.storage
+                .from('trade-photos')
+                .upload(testPath, blob);
+            
+            if (error) throw error;
+            
+            console.log('Upload successful!');
+            
+            // Clean up
+            await supabaseClient.storage.from('trade-photos').remove([testPath]);
+            
+            showNotification('✅ Photo storage working perfectly!', 'success');
+            
+        } catch (error) {
+            console.error('Storage test failed:', error);
+            showNotification('Storage test failed: ' + error.message, 'error');
+            
+            if (error.message.includes('row-level security')) {
+                showNotification('Check your Supabase storage policies', 'error');
             }
         }
-
-        async function testStorage() {
-            try {
-                showNotification('Testing photo storage...', 'success');
-                
-                // Test storage by listing buckets
-                const { data, error } = await supabase.storage.listBuckets();
-                
-                if (error) throw error;
-                
-                const hasTradePhotos = data.some(bucket => bucket.name === 'trade-photos');
-                
-                if (hasTradePhotos) {
-                    showNotification('✅ Photo storage is working!', 'success');
-                } else {
-                    showNotification('⚠️ Photo storage bucket not found', 'error');
-                }
-            } catch (error) {
-                console.error('Storage test failed:', error);
-                showNotification('Storage test failed: ' + error.message, 'error');
-            }
+    });
+    
+    // Status refresh
+    document.getElementById('refresh-status-btn').addEventListener('click', async () => {
+        console.log('Refreshing status...');
+        
+        // Test database
+        try {
+            const { error } = await supabaseClient.from('trades').select('id').limit(1);
+            document.getElementById('db-status').textContent = error ? 'Error: ' + error.message : 'Working ✅';
+        } catch (error) {
+            document.getElementById('db-status').textContent = 'Error: ' + error.message;
         }
-
-        async function saveTestTrade() {
-            const symbol = document.getElementById('test-symbol').value.trim().toUpperCase();
-            const side = document.getElementById('test-side').value;
-            const price = parseFloat(document.getElementById('test-price').value);
+        
+        // Test storage
+        try {
+            const canvas = document.createElement('canvas');
+            canvas.width = 1;
+            canvas.height = 1;
+            const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
             
-            const resultDiv = document.getElementById('trade-test-result');
+            const { error } = await supabaseClient.storage
+                .from('trade-photos')
+                .upload(`${user.id}/status-test.png`, blob);
             
-            if (!symbol || !price) {
-                showNotification('Please fill in all fields', 'error');
-                return;
+            if (!error) {
+                await supabaseClient.storage.from('trade-photos').remove([`${user.id}/status-test.png`]);
             }
             
-            try {
-                const trade = {
-                    user_id: user.id,
-                    symbol: symbol,
-                    side: side,
-                    entry_price: price,
-                    quantity: 1,
-                    date: new Date().toISOString(),
-                    pnl: 0,
-                    pnl_percent: 0,
-                    status: 'Open'
-                };
-
-                const { data, error } = await supabase
-                    .from('trades')
-                    .insert(trade)
-                    .select()
-                    .single();
-                
-                if (error) throw error;
-                
-                resultDiv.innerHTML = `
-                    <div class="status-box status-success" style="margin-top: 15px;">
-                        <strong>✅ Test Trade Saved!</strong><br>
-                        Trade ID: ${data.id}<br>
-                        ${symbol} ${side} at $${price}
-                    </div>
-                `;
-                
-                document.getElementById('test-trade-form').reset();
-                document.getElementById('test-symbol').value = 'AAPL';
-                document.getElementById('test-price').value = '150.00';
-                
-                showNotification('Test trade saved successfully!', 'success');
-            } catch (error) {
-                console.error('Error saving test trade:', error);
-                resultDiv.innerHTML = `
-                    <div class="status-box status-error" style="margin-top: 15px;">
-                        <strong>❌ Failed to save trade</strong><br>
-                        Error: ${error.message}
-                    </div>
-                `;
-                showNotification('Error saving trade: ' + error.message, 'error');
-            }
+            document.getElementById('storage-status').textContent = error ? 'Error: ' + error.message : 'Working ✅';
+        } catch (error) {
+            document.getElementById('storage-status').textContent = 'Error: ' + error.message;
         }
+    });
+    
+    // Logout
+    document.getElementById('logout-btn-header').addEventListener('click', async () => {
+        await supabaseClient.auth.signOut();
+        showNotification('👋 Signed out successfully', 'success');
+    });
+}
 
-        async function checkSystemStatus() {
-            console.log('Checking system status...');
-            
-            // Check database tables
-            try {
-                const { data, error } = await supabase.from('trades').select('id').limit(1);
-                document.getElementById('db-status').textContent = error ? 'Error: ' + error.message : 'Working ✅';
-                document.getElementById('db-status').parentElement.className = error ? 'status-box status-error' : 'status-box status-success';
-            } catch (error) {
-                document.getElementById('db-status').textContent = 'Error: ' + error.message;
-                document.getElementById('db-status').parentElement.className = 'status-box status-error';
-            }
-            
-            // Check storage
-            try {
-                const { data, error } = await supabase.storage.listBuckets();
-                const hasPhotoBucket = data && data.some(bucket => bucket.name === 'trade-photos');
-                document.getElementById('storage-status').textContent = error ? 'Error: ' + error.message : (hasPhotoBucket ? 'Working ✅' : 'Bucket not found ⚠️');
-                document.getElementById('storage-status').parentElement.className = error ? 'status-box status-error' : (hasPhotoBucket ? 'status-box status-success' : 'status-box status-warning');
-            } catch (error) {
-                document.getElementById('storage-status').textContent = 'Error: ' + error.message;
-                document.getElementById('storage-status').parentElement.className = 'status-box status-error';
-            }
-        }
-
-        function showNotification(message, type = 'success') {
-            // Remove existing notifications
-            const existing = document.querySelectorAll('.notification');
-            existing.forEach(n => n.remove());
-            
-            const notification = document.createElement('div');
-            notification.className = `notification ${type}`;
-            notification.textContent = message;
-            document.body.appendChild(notification);
-
-            setTimeout(() => {
-                notification.remove();
-            }, 5000);
-        }
-
-    </script>
-</body>
-</html>
-    </script>
+// Start the app
+document.addEventListener('DOMContentLoaded', initApp);
+</script>
 </body>
 </html>
