@@ -399,7 +399,7 @@
             <p>Your trusty trading journal to help you take on the markets 💪</p>
             <div class="user-info">
                 <span id="user-email">Loading...</span>
-                <button class="logout-btn" onclick="signOut()">Logout</button>
+                <button class="logout-btn" id="logout-btn">Logout</button>
             </div>
         </div>
 
@@ -437,8 +437,8 @@
                     <strong>Ready to test...</strong><br>
                     Click the button below to test if your database is working properly.
                 </div>
-                <button class="btn btn-primary" onclick="testDatabase()">🔍 Test Database Connection</button>
-                <button class="btn btn-secondary" onclick="testPhotoStorage()">📸 Test Photo Storage</button>
+                <button class="btn btn-primary" id="test-database-btn">🔍 Test Database Connection</button>
+                <button class="btn btn-secondary" id="test-storage-btn">📸 Test Photo Storage</button>
             </div>
             
             <div class="form-section">
@@ -485,7 +485,7 @@
                         <strong>⏳ Storage Bucket:</strong> <span id="storage-status">Checking...</span>
                     </div>
                 </div>
-                <button class="btn btn-primary" onclick="checkSystemStatus()">🔄 Refresh Status</button>
+                <button class="btn btn-primary" id="refresh-status-btn">🔄 Refresh Status</button>
             </div>
         </div>
     </div>
@@ -719,6 +719,12 @@
                 e.preventDefault();
                 saveTestTrade();
             });
+
+            // Add button event listeners
+            document.getElementById('test-database-btn').addEventListener('click', testDatabase);
+            document.getElementById('test-storage-btn').addEventListener('click', testPhotoStorage);
+            document.getElementById('refresh-status-btn').addEventListener('click', checkSystemStatus);
+            document.getElementById('logout-btn').addEventListener('click', signOut);
         }
 
         function showTab(tabId) {
