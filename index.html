@@ -399,7 +399,7 @@
             <p>Your trusty trading journal to help you take on the markets 💪</p>
             <div class="user-info">
                 <span id="user-email">Loading...</span>
-                <button class="logout-btn" id="logout-btn">Logout</button>
+                <button class="logout-btn" id="logout-btn-header">Logout</button>
             </div>
         </div>
 
@@ -715,16 +715,53 @@
             });
 
             // Test trade form
-            document.getElementById('test-trade-form').addEventListener('submit', function(e) {
-                e.preventDefault();
-                saveTestTrade();
-            });
+            const testTradeForm = document.getElementById('test-trade-form');
+            if (testTradeForm) {
+                testTradeForm.addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    saveTestTrade();
+                });
+            }
 
-            // Add button event listeners
-            document.getElementById('test-database-btn').addEventListener('click', testDatabase);
-            document.getElementById('test-storage-btn').addEventListener('click', testPhotoStorage);
-            document.getElementById('refresh-status-btn').addEventListener('click', checkSystemStatus);
-            document.getElementById('logout-btn').addEventListener('click', signOut);
+            // Add button event listeners with error checking
+            const testDbBtn = document.getElementById('test-database-btn');
+            const testStorageBtn = document.getElementById('test-storage-btn');
+            const refreshBtn = document.getElementById('refresh-status-btn');
+            const logoutBtn = document.getElementById('logout-btn-header');
+
+            if (testDbBtn) {
+                testDbBtn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    console.log('Test database button clicked');
+                    testDatabase();
+                });
+            }
+
+            if (testStorageBtn) {
+                testStorageBtn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    console.log('Test storage button clicked');
+                    testPhotoStorage();
+                });
+            }
+
+            if (refreshBtn) {
+                refreshBtn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    console.log('Refresh status button clicked');
+                    checkSystemStatus();
+                });
+            }
+
+            if (logoutBtn) {
+                logoutBtn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    console.log('Logout button clicked');
+                    signOut();
+                });
+            }
+
+            console.log('All event listeners set up successfully');
         }
 
         function showTab(tabId) {
