@@ -3737,6 +3737,239 @@ async function clearTradingPlan() {
     }
 }
 
+async function importBackup(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = async function(e) {
+        try {
+            const backup = JSON.parse(e.target.result);
+            
+            let itemCount = 0;
+            let importMessage = '';
+            
+            if (backup.trades && Array.isArray(backup.trades)) {
+                itemCount += backup.trades.length;
+                importMessage += `${backup.trades.length} trades, `;
+            }
+            
+            if (backup.accounts && Array.isArray(backup.accounts)) {
+                itemCount += backup.accounts.length;
+                importMessage += `${backup.accounts.length} accounts, `;
+            }
+            
+            if (backup.customStrategies && Array.isArray(backup.customStrategies)) {
+                itemCount += backup.customStrategies.length;
+                importMessage += `${backup.customStrategies.length} custom strategies, `;
+            }
+            
+            if (backup.tradingPlan && typeof backup.tradingPlan === 'object') {
+                itemCount += 1;
+                importMessage += 'trading plan, ';
+            }
+            
+            importMessage = importMessage.replace(/, $/, '');
+            
+            if (itemCount === 0) {
+                showNotification('No valid data found in backup file', 'error');
+                return;
+            }
+            
+            if (confirm(`Import ${importMessage}? This will merge with your current cloud data.`)) {
+                setSyncStatus('syncing', 'Importing...');
+                showNotification('🔄 Importing your data to the cloud...', 'info');
+                
+                try {
+                    // Import accounts first
+                    if (backup.accounts && backup.accounts.length > 0) {
+                        for (const accountData of backup.accounts) {
+                            // Check if account already exists by name
+                            const existingAccount = accounts.find(acc => acc.name === accountData.name);
+                            if (!existingAccount) {
+                                const account = {
+                                    id: Date.now() + Math.random(), // Generate new ID for cloud
+                                    name: accountData.name,
+                                    type: accountData.type || 'Cash',
+                                    broker: accountData.broker || '',
+                                    currency: accountData.currency || 'USD',
+                                    startingBalance: accountData.startingBalance || accountData.currentBalance || 0,
+                                    currentBalance: accountData.currentBalance || 0,
+                                    totalDeposits: accountData.totalDeposits || 0,
+                                    totalWithdrawals: accountData.totalWithdrawals || 0,
+                                    notes: accountData.notes || '',
+                                    createdAt: accountData.createdAt || new Date().toISOString()
+                                };
+                                
+                                const success = await saveAccount(account);
+                                if (success) {
+                                    accounts.push(account);
+                                }
+                            }
+                        }
+                    }
+                    
+                    // Import custom strategies
+                    if (backup.customStrategies && backup.customStrategies.length > 0) {
+                        // Merge with existing strategies
+                        const newStrategies = backup.customStrategies.filter(strategy => 
+                            !customStrategies.includes(strategy)
+                        );
+                        
+                        if (newStrategies.length > 0) {
+                            customStrategies.push(...newStrategies);
+                            
+                            const { error } = await supabaseClient
+                                .from('user_settings')
+                                .upsert({
+                                    user_id: user.id,
+                                    setting_name: 'custom_strategies',
+                                    setting_value: customStrategies
+                                });
+                            
+                            if (error) throw error;
+                        }
+                    }
+                    
+                    // Import trading plan
+                    if (backup.tradingPlan && Object.keys(backup.tradingPlan).length > 0) {
+                        tradingPlan = backup.tradingPlan;
+                        
+                        const { error } = await supabaseClient
+                            .from('trading_plans')
+                            .upsert({
+                                user_id: user.id,
+                                entry_criteria: tradingPlan.entryCriteria || '',
+                                profit_targets: tradingPlan.profitTargets || '',
+                                stop_loss_rules: tradingPlan.stopLossRules || '',
+                                position_sizing: tradingPlan.positionSizing || '',
+                                daily_loss_limit: tradingPlan.dailyLossLimit || '',
+                                trading_conditions: tradingPlan.tradingConditions || '',
+                                avoid_conditions: tradingPlan.avoidConditions || '',
+                                trading_hours: tradingPlan.tradingHours || '',
+                                avoid_times: tradingPlan.avoidTimes || '',
+                                emotional_rules: tradingPlan.emotionalRules || '',
+                                last_updated: new Date().toISOString()
+                            });
+                        
+                        if (error) throw error;
+                    }
+                    
+                    // Import profit target settings
+                    if (backup.profitTargetSettings) {
+                        profitTargetSettings = backup.profitTargetSettings;
+                        
+                        const { error } = await supabaseClient
+                            .from('user_settings')
+                            .upsert({
+                                user_id: user.id,
+                                setting_name: 'profit_target',
+                                setting_value: profitTargetSettings
+                            });
+                        
+                        if (error) throw error;
+                    }
+                    
+                    // Import trades last (need accounts to exist first)
+                    if (backup.trades && backup.trades.length > 0) {
+                        let importedCount = 0;
+                        let skippedCount = 0;
+                        
+                        for (const tradeData of backup.trades) {
+                            // Check if trade already exists (by date, symbol, and entry price)
+                            const existingTrade = trades.find(t => 
+                                t.date === tradeData.date && 
+                                t.symbol === tradeData.symbol && 
+                                Math.abs(t.entryPrice - tradeData.entryPrice) < 0.00001
+                            );
+                            
+                            if (!existingTrade) {
+                                // Try to match account by name if accountId doesn't exist
+                                let accountId = tradeData.accountId;
+                                if (tradeData.accountId && !accounts.find(acc => acc.id === tradeData.accountId)) {
+                                    // Try to find account by looking up in backup accounts
+                                    const backupAccount = backup.accounts?.find(acc => acc.id === tradeData.accountId);
+                                    if (backupAccount) {
+                                        const matchedAccount = accounts.find(acc => acc.name === backupAccount.name);
+                                        accountId = matchedAccount?.id || null;
+                                    } else {
+                                        accountId = null; // Will need to be set manually later
+                                    }
+                                }
+                                
+                                const trade = {
+                                    id: Date.now() + Math.random(), // Generate new ID for cloud
+                                    accountId: accountId,
+                                    date: tradeData.date,
+                                    symbol: tradeData.symbol,
+                                    side: tradeData.side,
+                                    quantity: tradeData.quantity,
+                                    entryPrice: tradeData.entryPrice,
+                                    exitPrice: tradeData.exitPrice,
+                                    manualPnL: tradeData.manualPnL,
+                                    commission: tradeData.commission || 0,
+                                    swap: tradeData.swap || 0,
+                                    stopLoss: tradeData.stopLoss,
+                                    takeProfit: tradeData.takeProfit,
+                                    strategy: tradeData.strategy,
+                                    marketCondition: tradeData.marketCondition,
+                                    riskRating: tradeData.riskRating,
+                                    confidence: tradeData.confidence,
+                                    followedPlan: tradeData.followedPlan,
+                                    setupDescription: tradeData.setupDescription,
+                                    emotions: tradeData.emotions,
+                                    lessons: tradeData.lessons,
+                                    pnl: tradeData.pnl || 0,
+                                    pnlPercent: tradeData.pnlPercent || 0,
+                                    status: tradeData.status || 'Open',
+                                    grossPnL: tradeData.grossPnL || tradeData.pnl,
+                                    photos: tradeData.photos || [],
+                                    timestamp: tradeData.timestamp || new Date().toISOString()
+                                };
+                                
+                                const success = await saveTrade(trade);
+                                if (success) {
+                                    trades.unshift(trade);
+                                    importedCount++;
+                                    
+                                    // Update account balance if trade is closed
+                                    if (trade.exitPrice && trade.accountId) {
+                                        await updateAccountBalance(trade.accountId, trade.pnl);
+                                    }
+                                } else {
+                                    skippedCount++;
+                                }
+                            } else {
+                                skippedCount++;
+                            }
+                        }
+                        
+                        showNotification(`✅ Imported ${importedCount} trades, skipped ${skippedCount} duplicates`, 'success');
+                    }
+                    
+                    // Update all displays
+                    updateAllDisplays();
+                    
+                    setSyncStatus('', 'Synced');
+                    showNotification('🎉 Import completed successfully!', 'success');
+                    
+                } catch (error) {
+                    console.error('Error during import:', error);
+                    setSyncStatus('error', 'Import Error');
+                    showNotification('❌ Import failed: ' + error.message, 'error');
+                }
+            }
+        } catch (err) {
+            console.error('Error reading backup file:', err);
+            showNotification('❌ Error reading backup file: ' + err.message, 'error');
+        }
+    };
+    reader.readAsText(file);
+    
+    // Clear the input so the same file can be imported again if needed
+    event.target.value = '';
+}
+
 // Make functions globally available
 window.showAddStrategyForm = showAddStrategyForm;
 window.cancelAddStrategy = cancelAddStrategy;
@@ -3746,6 +3979,7 @@ window.saveTradingPlan = saveTradingPlan;
 window.clearTradingPlan = clearTradingPlan;
 window.exportTrades = exportTrades;
 window.exportBackup = exportBackup;
+window.importBackup = importBackup;
 window.forceSync = forceSync;
 window.saveSettings = saveSettings;
 window.closePhotoModal = closePhotoModal;
