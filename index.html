@@ -3178,7 +3178,215 @@ function updatePortfolioOverview() {
     document.getElementById('portfolio-open-trades').textContent = openTrades;
 }
 
-function updateDashboard() {
+function updateRecentTrades(filteredTrades) {
+    const container = document.getElementById('recent-trades-list');
+    if (!container) return;
+    
+    const recentTrades = filteredTrades.slice(0, 5);
+
+    if (recentTrades.length === 0) {
+        container.innerHTML = '<div class="empty-state"><p>No recent trades</p></div>';
+        return;
+    }
+
+    container.innerHTML = recentTrades.map(trade => {
+        const account = accounts.find(acc => acc.id === (trade.account_id || trade.accountId));
+        return `
+            <div class="recent-trade-item">
+                <div>
+                    <div class="trade-symbol">${trade.symbol}</div>
+                    <div style="font-size: 12px; color: #6c757d;">
+                        ${new Date(trade.date).toLocaleDateString()} • 
+                        <span class="trade-side ${trade.side.toLowerCase()}">${trade.side}</span>
+                        ${account ? ` • ${account.name}` : ''}
+                    </div>
+                </div>
+                <div style="text-align: right;">
+                    <div class="${(trade.pnl || 0) >= 0 ? 'profit' : 'loss'}">
+                        ${(trade.pnl || 0) >= 0 ? '+' : ''}${(trade.pnl || 0).toFixed(2)}
+                    </div>
+                    <div style="font-size: 12px; color: #6c757d;">
+                        ${trade.status || (trade.exit_price || trade.exitPrice ? 'Closed' : 'Open')}
+                    </div>
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
+function updatePortfolioOverview() {
+    const totalValue = accounts.reduce((sum, acc) => sum + (acc.current_balance || acc.currentBalance || 0), 0);
+    const allClosedTrades = trades.filter(t => t.exit_price || t.exitPrice);
+    const totalPnL = allClosedTrades.reduce((sum, t) => sum + (t.pnl || 0), 0);
+    const openTrades = trades.filter(t => !(t.exit_price || t.exitPrice)).length;
+
+    const elements = {
+        'portfolio-total-value': `${totalValue.toLocaleString()}`,
+        'portfolio-total-pnl': `${totalPnL >= 0 ? '+' : ''}${totalPnL.toLocaleString()}`,
+        'portfolio-accounts': accounts.length,
+        'portfolio-open-trades': openTrades
+    };
+
+    Object.entries(elements).forEach(([id, value]) => {
+        const element = document.getElementById(id);
+        if (element) {
+            element.textContent = value;
+        }
+    });
+}
+
+function updateCalendar() {
+    debug('📅 Updating calendar...');
+    
+    const year = currentCalendarDate.getFullYear();
+    const month = currentCalendarDate.getMonth();
+    
+    // Update month/year display
+    const monthYearEl = document.getElementById('calendar-month-year');
+    if (monthYearEl) {
+        monthYearEl.textContent = `${monthNames[month]} ${year}`;
+    }
+
+    // Calculate calendar grid
+    const firstDay = new Date(year, month, 1);
+    const lastDay = new Date(year, month + 1, 0);
+    
+    // Generate calendar HTML with Monday as first day
+    let calendarHTML = '';
+    
+    // Add day headers
+    const dayHeaders = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+    dayHeaders.forEach(day => {
+        calendarHTML += `<div class="calendar-header">${day}</div>`;
+    });
+
+    // Adjust start date to start on Monday
+    const mondayStart = new Date(firstDay);
+    const dayOfWeek = firstDay.getDay();
+    const daysToSubtract = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+    mondayStart.setDate(mondayStart.getDate() - daysToSubtract);
+    
+    const sundayEnd = new Date(lastDay);
+    const endDayOfWeek = lastDay.getDay();
+    const daysToAdd = endDayOfWeek === 0 ? 0 : 7 - endDayOfWeek;
+    sundayEnd.setDate(sundayEnd.getDate() + daysToAdd);
+
+    // Generate calendar days
+    const currentDate = new Date(mondayStart);
+    const today = new Date();
+    const todayDateString = today.toDateString();
+
+    while (currentDate <= sundayEnd) {
+        const isCurrentMonth = currentDate.getMonth() === month;
+        const isToday = currentDate.toDateString() === todayDateString;
+        const dayClasses = ['calendar-day'];
+        
+        if (!isCurrentMonth) dayClasses.push('other-month');
+        if (isToday) dayClasses.push('today');
+
+        // Get trades for this day
+        const dayTrades = getTradesForDate(currentDate);
+        const closedTrades = dayTrades.filter(t => t.exit_price || t.exitPrice);
+        const totalPnL = closedTrades.reduce((sum, t) => sum + (t.pnl || 0), 0);
+        const tradeCount = dayTrades.length;
+
+        // Determine day type and styling
+        let dayContent = '';
+        if (tradeCount > 0) {
+            if (closedTrades.length > 0) {
+                if (totalPnL > 0) {
+                    dayClasses.push('profit-day');
+                } else if (totalPnL < 0) {
+                    dayClasses.push('loss-day');
+                } else {
+                    dayClasses.push('mixed-day');
+                }
+                
+                const pnlClass = totalPnL > 0 ? 'profit' : totalPnL < 0 ? 'loss' : 'mixed';
+                dayContent = `
+                    <div class="calendar-day-pnl ${pnlClass}">
+                        ${totalPnL >= 0 ? '+' : ''}${totalPnL.toFixed(2)}
+                    </div>
+                    <div class="calendar-day-trades">
+                        ${tradeCount} trade${tradeCount !== 1 ? 's' : ''}
+                    </div>
+                `;
+            } else {
+                // Only open trades
+                dayClasses.push('mixed-day');
+                dayContent = `
+                    <div class="calendar-day-pnl mixed">Open Trades</div>
+                    <div class="calendar-day-trades">
+                        ${tradeCount} trade${tradeCount !== 1 ? 's' : ''}
+                    </div>
+                `;
+            }
+        }
+
+        calendarHTML += `
+            <div class="${dayClasses.join(' ')}" onclick="showDayDetails('${currentDate.toISOString()}')">
+                <div class="calendar-day-number">${currentDate.getDate()}</div>
+                ${dayContent}
+            </div>
+        `;
+
+        currentDate.setDate(currentDate.getDate() + 1);
+    }
+
+    const calendarGrid = document.getElementById('calendar-grid');
+    if (calendarGrid) {
+        calendarGrid.innerHTML = calendarHTML;
+    }
+}
+
+function getTradesForDate(date) {
+    const dateStr = date.toDateString();
+    return trades.filter(trade => {
+        const tradeDate = new Date(trade.date);
+        return tradeDate.toDateString() === dateStr;
+    }).sort((a, b) => new Date(a.date) - new Date(b.date));
+}
+
+function showDayDetails(dateString) {
+    const date = new Date(dateString);
+    const dayTrades = getTradesForDate(date);
+    
+    if (dayTrades.length === 0) {
+        showNotification('No trades on this day', 'error');
+        return;
+    }
+    
+    // Switch to trade history tab and filter by date
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    const dateStr = `${year}-${month}-${day}`;
+    
+    const fromEl = document.getElementById('filter-date-from');
+    const toEl = document.getElementById('filter-date-to');
+    
+    if (fromEl) fromEl.value = dateStr;
+    if (toEl) toEl.value = dateStr;
+    
+    updateTradesDisplay();
+    showTab('trades');
+}
+
+// Calendar navigation functions
+function previousMonth() {
+    currentCalendarDate.setMonth(currentCalendarDate.getMonth() - 1);
+    updateCalendar();
+}
+
+function nextMonth() {
+    currentCalendarDate.setMonth(currentCalendarDate.getMonth() + 1);
+    updateCalendar();
+}
+
+function goToCurrentMonth() {
+    currentCalendarDate = new Date();
+    updateCalendar();
+}
     debug('🔍 Updating analysis...');
     
     const container = document.getElementById('analysis-container');
