@@ -714,14 +714,14 @@ function viewTrade(id) {
                     <span class="trade-detail-label">Take Profit:</span>
                     <span class="trade-detail-value">${trade.takeProfit ? trade.takeProfit.toFixed(5) : 'Not set'}</span>
                 </div>
-                ${trade.exitPrice ? `
-                <div class="trade-detail-row">
-                    <span class="trade-detail-label">P&L:</span>
-                    <span class="trade-detail-value ${trade.pnl >= 0 ? 'profit' : 'loss'}">
-                        ${trade.pnl >= 0 ? '+' : ''}${trade.pnl.toFixed(2)} (${trade.pnlPercent >= 0 ? '+' : ''}${trade.pnlPercent.toFixed(2)}%)
-                    </span>
-                </div>
-                ` : ''}
+                ${trade.exitPrice ? 
+                '<div class="trade-detail-row">' +
+                    '<span class="trade-detail-label">P&L:</span>' +
+                    '<span class="trade-detail-value ' + (trade.pnl >= 0 ? 'profit' : 'loss') + '">' +
+                        (trade.pnl >= 0 ? '+' : '') + trade.pnl.toFixed(2) + ' (' + (trade.pnlPercent >= 0 ? '+' : '') + trade.pnlPercent.toFixed(2) + '%)' +
+                    '</span>' +
+                '</div>'
+                : ''}
             </div>
 
             <div class="trade-view-section">
@@ -737,42 +737,42 @@ function viewTrade(id) {
             </div>
         </div>
 
-        ${trade.setupDescription || trade.emotions || trade.lessons ? `
-        <div class="trade-view-section trade-view-notes">
-            <h4>📝 Notes & Analysis</h4>
-            ${trade.setupDescription ? `
-            <div style="margin-bottom: 15px;">
-                <strong>Setup Description:</strong>
-                <textarea readonly style="margin-top: 5px;">${trade.setupDescription}</textarea>
-            </div>
-            ` : ''}
-            ${trade.emotions ? `
-            <div style="margin-bottom: 15px;">
-                <strong>Emotions & Psychology:</strong>
-                <textarea readonly style="margin-top: 5px;">${trade.emotions}</textarea>
-            </div>
-            ` : ''}
-            ${trade.lessons ? `
-            <div style="margin-bottom: 15px;">
-                <strong>Lessons Learned:</strong>
-                <textarea readonly style="margin-top: 5px;">${trade.lessons}</textarea>
-            </div>
-            ` : ''}
-        </div>
-        ` : ''}
+        ${trade.setupDescription || trade.emotions || trade.lessons ? 
+        '<div class="trade-view-section trade-view-notes">' +
+            '<h4>📝 Notes & Analysis</h4>' +
+            (trade.setupDescription ? 
+                '<div style="margin-bottom: 15px;">' +
+                    '<strong>Setup Description:</strong>' +
+                    '<textarea readonly style="margin-top: 5px;">' + trade.setupDescription + '</textarea>' +
+                '</div>'
+            : '') +
+            (trade.emotions ? 
+                '<div style="margin-bottom: 15px;">' +
+                    '<strong>Emotions & Psychology:</strong>' +
+                    '<textarea readonly style="margin-top: 5px;">' + trade.emotions + '</textarea>' +
+                '</div>'
+            : '') +
+            (trade.lessons ? 
+                '<div style="margin-bottom: 15px;">' +
+                    '<strong>Lessons Learned:</strong>' +
+                    '<textarea readonly style="margin-top: 5px;">' + trade.lessons + '</textarea>' +
+                '</div>'
+            : '') +
+        '</div>'
+        : ''}
 
-        ${trade.photos && trade.photos.length > 0 ? `
-        <div class="trade-view-section trade-view-photos">
-            <h4>📸 Trade Photos (${trade.photos.length})</h4>
-            <div class="trade-view-photos-grid">
-                ${trade.photos.map(photo => `
-                    <div class="trade-view-photo" onclick="openTradePhoto('${photo.url}')">
-                        <img src="${photo.url}" alt="${photo.name}" title="${photo.name}">
-                    </div>
-                `).join('')}
-            </div>
-        </div>
-        ` : ''}
+        ${trade.photos && trade.photos.length > 0 ? 
+        '<div class="trade-view-section trade-view-photos">' +
+            '<h4>📸 Trade Photos (' + trade.photos.length + ')</h4>' +
+            '<div class="trade-view-photos-grid">' +
+                trade.photos.map(photo => 
+                    '<div class="trade-view-photo" onclick="openTradePhoto(\'' + photo.url + '\')">' +
+                        '<img src="' + photo.url + '" alt="' + photo.name + '" title="' + photo.name + '">' +
+                    '</div>'
+                ).join('') +
+            '</div>' +
+        '</div>'
+        : ''}
     `;
 
     document.getElementById('trade-view-content').innerHTML = modalContent;
@@ -806,7 +806,7 @@ function editTrade(id) {
     currentPhotos = (trade.photos || []).map(photo => ({
         id: Date.now() + Math.random(),
         name: photo.name,
-        data: photo.url,
+        data: photo.url, // Use URL directly for display
         url: photo.url,
         timestamp: photo.timestamp
     }));
@@ -1559,13 +1559,13 @@ async function uploadPhoto(file) {
 
 async function getPhotoUrl(fileName) {
     try {
-        const { data } = await supabaseClient.storage
+        const { data } = supabaseClient.storage
             .from('trade-photos')
             .getPublicUrl(fileName);
         
         return data.publicUrl;
     } catch (error) {
-        debug(`❌ Error getting photo URL: ${error.message}`);
+        debug('❌ Error getting photo URL: ' + error.message);
         return null;
     }
 }
