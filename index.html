@@ -2653,67 +2653,99 @@ async function loadUserData() {
     
     try {
         // Load trades
-        const { data: tradesData, error: tradesError } = await supabaseClient
-            .from('trades')
-            .select('*')
-            .eq('user_id', user.id)
-            .order('date', { ascending: false });
-            
-        if (tradesError && tradesError.code !== 'PGRST116') {
-            console.log('Trades table might not exist yet:', tradesError);
-        } else if (tradesData) {
-            trades = tradesData;
+        try {
+            const { data: tradesData, error: tradesError } = await supabaseClient
+                .from('trades')
+                .select('*')
+                .eq('user_id', user.id)
+                .order('date', { ascending: false });
+                
+            if (tradesError) {
+                console.log('Trades load error:', tradesError);
+                trades = [];
+            } else {
+                trades = tradesData || [];
+            }
+        } catch (e) {
+            console.log('Trades table might not exist yet');
+            trades = [];
         }
         
         // Load accounts
-        const { data: accountsData, error: accountsError } = await supabaseClient
-            .from('accounts')
-            .select('*')
-            .eq('user_id', user.id);
-            
-        if (accountsError && accountsError.code !== 'PGRST116') {
-            console.log('Accounts table might not exist yet:', accountsError);
-        } else if (accountsData) {
-            accounts = accountsData;
+        try {
+            const { data: accountsData, error: accountsError } = await supabaseClient
+                .from('accounts')
+                .select('*')
+                .eq('user_id', user.id);
+                
+            if (accountsError) {
+                console.log('Accounts load error:', accountsError);
+                accounts = [];
+            } else {
+                accounts = accountsData || [];
+            }
+        } catch (e) {
+            console.log('Accounts table might not exist yet');
+            accounts = [];
         }
         
         // Load custom strategies
-        const { data: strategiesData, error: strategiesError } = await supabaseClient
-            .from('custom_strategies')
-            .select('*')
-            .eq('user_id', user.id);
-            
-        if (strategiesError && strategiesError.code !== 'PGRST116') {
-            console.log('Strategies table might not exist yet:', strategiesError);
-        } else if (strategiesData) {
-            customStrategies = strategiesData.map(s => s.name);
+        try {
+            const { data: strategiesData, error: strategiesError } = await supabaseClient
+                .from('custom_strategies')
+                .select('*')
+                .eq('user_id', user.id);
+                
+            if (strategiesError) {
+                console.log('Strategies load error:', strategiesError);
+                customStrategies = [];
+            } else {
+                customStrategies = strategiesData ? strategiesData.map(s => s.name) : [];
+            }
+        } catch (e) {
+            console.log('Custom strategies table might not exist yet');
+            customStrategies = [];
         }
         
-        // Load trading plan
-        const { data: planData, error: planError } = await supabaseClient
-            .from('trading_plans')
-            .select('*')
-            .eq('user_id', user.id)
-            .single();
-            
-        if (planError && planError.code !== 'PGRST116' && planError.code !== 'PGRST103') {
-            console.log('Trading plan table might not exist yet:', planError);
-        } else if (planData) {
-            tradingPlan = planData;
+        // Load trading plan - skip if table doesn't exist
+        try {
+            const { data: planData, error: planError } = await supabaseClient
+                .from('trading_plans')
+                .select('*')
+                .eq('user_id', user.id)
+                .maybeSingle();
+                
+            if (planError) {
+                console.log('Trading plan load error:', planError);
+                tradingPlan = {};
+            } else {
+                tradingPlan = planData || {};
+            }
+        } catch (e) {
+            console.log('Trading plan table might not exist yet');
+            tradingPlan = {};
         }
         
-        // Load profit target settings
-        const { data: targetData, error: targetError } = await supabaseClient
-            .from('profit_targets')
-            .select('*')
-            .eq('user_id', user.id)
-            .single();
-            
-        if (targetError && targetError.code !== 'PGRST116' && targetError.code !== 'PGRST103') {
-            console.log('Profit target table might not exist yet:', targetError);
-        } else if (targetData) {
-            profitTarget = targetData;
+        // Load profit target settings - skip if table doesn't exist
+        try {
+            const { data: targetData, error: targetError } = await supabaseClient
+                .from('profit_targets')
+                .select('*')
+                .eq('user_id', user.id)
+                .maybeSingle();
+                
+            if (targetError) {
+                console.log('Profit target load error:', targetError);
+                profitTarget = { enabled: false, amount: 0, period: 'monthly' };
+            } else {
+                profitTarget = targetData || { enabled: false, amount: 0, period: 'monthly' };
+            }
+        } catch (e) {
+            console.log('Profit target table might not exist yet');
+            profitTarget = { enabled: false, amount: 0, period: 'monthly' };
         }
+        
+        debug(`✅ Loaded: ${trades.length} trades, ${accounts.length} accounts, ${customStrategies.length} strategies`);
         
         // Update UI with loaded data
         updateStrategyDropdowns();
@@ -2728,7 +2760,7 @@ async function loadUserData() {
         updateTradingPlanTooltip();
         
     } catch (error) {
-        console.log('Error loading user data:', error);
+        debug(`❌ Error loading user data: ${error.message}`);
         // Initialize with empty data if tables don't exist yet
         trades = [];
         accounts = [];
@@ -3918,18 +3950,46 @@ async function deleteAccount(id) {
                 .eq('id', id)
                 .eq('user_id', user.id);
                 
-            if (error) throw error;
+            if (error) {
+                console.log('Delete account error:', error);
+                // Continue with local deletion even if Supabase fails
+            }
             
-            // Remove account association from trades
+            // Update trades to remove account association
             if (accountTrades.length > 0) {
                 for (const trade of accountTrades) {
+                    const oldAccountId = trade.account_id || trade.accountId;
                     trade.account_id = null;
                     trade.accountId = null;
-                    await saveTradeToSupabase(trade);
+                    
+                    // Try to update in Supabase
+                    try {
+                        await supabaseClient
+                            .from('trades')
+                            .update({ account_id: null })
+                            .eq('id', trade.id)
+                            .eq('user_id', user.id);
+                    } catch (updateError) {
+                        console.log('Error updating trade account reference:', updateError);
+                    }
                 }
+                
+                // Update local trades array
+                trades = trades.map(trade => {
+                    if ((trade.account_id || trade.accountId) === id) {
+                        const updatedTrade = { ...trade };
+                        delete updatedTrade.account_id;
+                        delete updatedTrade.accountId;
+                        return updatedTrade;
+                    }
+                    return trade;
+                });
             }
 
+            // Remove from local accounts array
             accounts = accounts.filter(acc => acc.id !== id);
+            
+            // Update UI
             updateAccountDropdowns();
             updateAccountList();
             updateTradesDisplay();
@@ -4147,29 +4207,38 @@ async function saveTradingPlan() {
         profit_targets: document.getElementById('profit-targets').value,
         stop_loss_rules: document.getElementById('stop-loss-rules').value,
         position_sizing: document.getElementById('position-sizing').value,
-        daily_loss_limit: document.getElementById('daily-loss-limit').value,
-        last_updated: new Date().toISOString()
+        daily_loss_limit: document.getElementById('daily-loss-limit').value
     };
 
     updateSyncStatus('syncing');
     
     try {
-        // Save to Supabase
-        const { data, error } = await supabaseClient
-            .from('trading_plans')
-            .upsert({
-                user_id: user.id,
+        // Try to save to Supabase, but handle if table doesn't exist
+        try {
+            const { data, error } = await supabaseClient
+                .from('trading_plans')
+                .upsert({
+                    user_id: user.id,
+                    ...plan,
+                    created_at: new Date().toISOString(),
+                    updated_at: new Date().toISOString()
+                })
+                .select()
+                .single();
+                
+            if (error) throw error;
+            
+            tradingPlan = data;
+        } catch (dbError) {
+            console.log('Trading plan table may not exist, saving locally:', dbError);
+            // Save locally if Supabase table doesn't exist
+            tradingPlan = {
                 ...plan,
                 updated_at: new Date().toISOString()
-            })
-            .select()
-            .single();
-            
-        if (error) throw error;
+            };
+        }
         
-        tradingPlan = data;
         updateTradingPlanTooltip();
-        
         updateSyncStatus('synced');
         showNotification('Trading plan saved successfully', 'success');
         
@@ -4191,13 +4260,17 @@ async function clearTradingPlan() {
         updateSyncStatus('syncing');
         
         try {
-            // Delete from Supabase
-            const { error } = await supabaseClient
-                .from('trading_plans')
-                .delete()
-                .eq('user_id', user.id);
-                
-            if (error) throw error;
+            // Try to delete from Supabase
+            try {
+                const { error } = await supabaseClient
+                    .from('trading_plans')
+                    .delete()
+                    .eq('user_id', user.id);
+                    
+                if (error) throw error;
+            } catch (dbError) {
+                console.log('Trading plan table may not exist:', dbError);
+            }
             
             tradingPlan = {};
             updateTradingPlanTooltip();
@@ -4257,18 +4330,30 @@ async function saveProfitTarget() {
     updateSyncStatus('syncing');
     
     try {
-        // Save to Supabase
-        const { data, error } = await supabaseClient
-            .from('profit_targets')
-            .upsert({
-                user_id: user.id,
+        // Try to save to Supabase, but handle if table doesn't exist
+        try {
+            const { data, error } = await supabaseClient
+                .from('profit_targets')
+                .upsert({
+                    user_id: user.id,
+                    ...profitTarget,
+                    created_at: new Date().toISOString(),
+                    updated_at: new Date().toISOString()
+                })
+                .select()
+                .single();
+                
+            if (error) throw error;
+            
+            profitTarget = data;
+        } catch (dbError) {
+            console.log('Profit targets table may not exist, saving locally:', dbError);
+            // Save locally if Supabase table doesn't exist
+            profitTarget = {
                 ...profitTarget,
                 updated_at: new Date().toISOString()
-            })
-            .select()
-            .single();
-            
-        if (error) throw error;
+            };
+        }
         
         updateProfitTarget();
         updateSyncStatus('synced');
