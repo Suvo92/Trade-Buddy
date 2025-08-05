@@ -2867,8 +2867,202 @@ async function saveAccountToSupabase(account) {
     }
 }
 
-// Update functions from offline version
-function updateDashboard() {
+// Update functions - define these early so they're available when needed
+function updateStats() {
+    debug('📈 Updating statistics...');
+    
+    const closedTrades = trades.filter(t => t.exit_price || t.exitPrice);
+    const winningTrades = closedTrades.filter(t => (t.pnl || 0) > 0);
+    const losingTrades = closedTrades.filter(t => (t.pnl || 0) < 0);
+
+    const totalTrades = trades.length;
+    const winRate = closedTrades.length > 0 ? (winningTrades.length / closedTrades.length * 100) : 0;
+    const totalPnL = closedTrades.reduce((sum, t) => sum + (t.pnl || 0), 0);
+    const avgWin = winningTrades.length > 0 ? winningTrades.reduce((sum, t) => sum + (t.pnl || 0), 0) / winningTrades.length : 0;
+    const avgLoss = losingTrades.length > 0 ? Math.abs(losingTrades.reduce((sum, t) => sum + (t.pnl || 0), 0) / losingTrades.length) : 0;
+    const profitFactor = avgLoss > 0 ? avgWin / avgLoss : 0;
+    
+    const largestWin = winningTrades.length > 0 ? Math.max(...winningTrades.map(t => t.pnl || 0)) : 0;
+    const largestLoss = losingTrades.length > 0 ? Math.min(...losingTrades.map(t => t.pnl || 0)) : 0;
+
+    // Calculate additional statistics
+    const planAdherentTrades = trades.filter(t => t.followed_plan || t.followedPlan);
+    const planAdherence = trades.length > 0 ? (planAdherentTrades.length / trades.length * 100) : 0;
+    
+    // Calculate consecutive wins/losses
+    let maxConsecutiveWins = 0;
+    let maxConsecutiveLosses = 0;
+    let currentWins = 0;
+    let currentLosses = 0;
+    
+    closedTrades.forEach(trade => {
+        if ((trade.pnl || 0) > 0) {
+            currentWins++;
+            currentLosses = 0;
+            maxConsecutiveWins = Math.max(maxConsecutiveWins, currentWins);
+        } else if ((trade.pnl || 0) < 0) {
+            currentLosses++;
+            currentWins = 0;
+            maxConsecutiveLosses = Math.max(maxConsecutiveLosses, currentLosses);
+        }
+    });
+    
+    // Calculate expectancy
+    const expectancy = closedTrades.length > 0 ? totalPnL / closedTrades.length : 0;
+    
+    // Calculate total fees
+    const totalFees = trades.reduce((sum, t) => sum + (t.commission || 0) + Math.abs(t.swap || 0), 0);
+    
+    // Calculate Sharpe ratio (simplified)
+    const returns = closedTrades.map(t => (t.pnl || 0));
+    const avgReturn = returns.length > 0 ? returns.reduce((sum, r) => sum + r, 0) / returns.length : 0;
+    const returnVariance = returns.length > 0 ? 
+        returns.reduce((sum, r) => sum + Math.pow(r - avgReturn, 2), 0) / returns.length : 0;
+    const returnStdDev = Math.sqrt(returnVariance);
+    const sharpeRatio = returnStdDev > 0 ? avgReturn / returnStdDev : 0;
+    
+    // Calculate average RRR
+    const tradesWithRRR = trades.filter(t => (t.stop_loss || t.stopLoss) && (t.take_profit || t.takeProfit) && (t.entry_price || t.entryPrice));
+    let avgRRR = 0;
+    
+    if (tradesWithRRR.length > 0) {
+        const totalRRR = tradesWithRRR.reduce((sum, trade) => {
+            const entryPrice = trade.entry_price || trade.entryPrice;
+            const stopLoss = trade.stop_loss || trade.stopLoss;
+            const takeProfit = trade.take_profit || trade.takeProfit;
+            const risk = Math.abs(entryPrice - stopLoss);
+            const reward = Math.abs(takeProfit - entryPrice);
+            return risk > 0 ? sum + (reward / risk) : sum;
+        }, 0);
+        avgRRR = totalRRR / tradesWithRRR.length;
+    }
+    
+    // Calculate unique trading days
+    const tradingDays = new Set(trades.map(t => new Date(t.date).toDateString())).size;
+
+    // Update the UI - check if elements exist before updating
+    const elements = {
+        'total-trades': totalTrades,
+        'win-rate': winRate.toFixed(1) + '%',
+        'total-pnl': totalPnL.toFixed(2),
+        'avg-win': avgWin.toFixed(2),
+        'avg-loss': avgLoss.toFixed(2),
+        'profit-factor': profitFactor.toFixed(2),
+        'largest-win': largestWin.toFixed(2),
+        'largest-loss': largestLoss.toFixed(2),
+        'avg-rrr': avgRRR > 0 ? `1:${avgRRR.toFixed(2)}` : 'N/A',
+        'plan-adherence-stat': planAdherence.toFixed(1) + '%',
+        'consecutive-wins': maxConsecutiveWins,
+        'consecutive-losses': maxConsecutiveLosses,
+        'sharpe-ratio': sharpeRatio.toFixed(2),
+        'expectancy': expectancy.toFixed(2),
+        'total-fees': totalFees.toFixed(2),
+        'trading-days': tradingDays
+    };
+
+    Object.entries(elements).forEach(([id, value]) => {
+        const element = document.getElementById(id);
+        if (element) {
+            element.textContent = value;
+            if (id === 'total-pnl') {
+                element.className = 'stat-value ' + (totalPnL >= 0 ? 'profit' : 'loss');
+            }
+        }
+    });
+}
+
+function updateTradesDisplay() {
+    debug('📊 Updating trades display...');
+    
+    const container = document.getElementById('trades-container');
+    if (!container) return;
+    
+    if (trades.length === 0) {
+        container.innerHTML = `
+            <div class="empty-state">
+                <h3>No trades recorded yet</h3>
+                <p>Start by adding your first trade using the "Add Trade" tab</p>
+            </div>
+        `;
+        return;
+    }
+
+    let filteredTrades = filterTrades();
+
+    const tableHTML = `
+        <table class="trades-table">
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Account</th>
+                    <th>Symbol</th>
+                    <th>Side</th>
+                    <th>Qty</th>
+                    <th>Entry</th>
+                    <th>Exit</th>
+                    <th>P&L</th>
+                    <th>%</th>
+                    <th>Status</th>
+                    <th>Strategy</th>
+                    <th>Plan</th>
+                    <th>Photos</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                ${filteredTrades.map(trade => {
+                    const account = accounts.find(acc => acc.id === (trade.account_id || trade.accountId));
+                    const entryPrice = trade.entry_price || trade.entryPrice || 0;
+                    const exitPrice = trade.exit_price || trade.exitPrice;
+                    const pnl = trade.pnl || 0;
+                    const pnlPercent = trade.pnl_percent || trade.pnlPercent || 0;
+                    const photos = trade.photos || [];
+                    
+                    return `
+                        <tr>
+                            <td>${new Date(trade.date).toLocaleDateString()}</td>
+                            <td>${account ? account.name : 'Unknown'}</td>
+                            <td><strong>${trade.symbol}</strong></td>
+                            <td>${trade.side}</td>
+                            <td>${trade.quantity}</td>
+                            <td>${entryPrice.toFixed(5)}</td>
+                            <td>${exitPrice ? exitPrice.toFixed(5) : '-'}</td>
+                            <td class="${pnl >= 0 ? 'profit' : 'loss'}">
+                                ${pnl >= 0 ? '+' : ''}${pnl.toFixed(2)}
+                            </td>
+                            <td class="${pnlPercent >= 0 ? 'profit' : 'loss'}">
+                                ${pnlPercent >= 0 ? '+' : ''}${pnlPercent.toFixed(2)}%
+                            </td>
+                            <td>${trade.status || (exitPrice ? 'Closed' : 'Open')}</td>
+                            <td>${trade.strategy || '-'}</td>
+                            <td>
+                                ${trade.hasOwnProperty('followed_plan') || trade.hasOwnProperty('followedPlan') ? 
+                                    `<span class="plan-indicator ${(trade.followed_plan || trade.followedPlan) ? 'plan-followed' : 'plan-not-followed'}">
+                                        ${(trade.followed_plan || trade.followedPlan) ? '✅' : '❌'}
+                                    </span>` : '-'}
+                            </td>
+                            <td>
+                                <div class="trade-photos">
+                                    ${photos.slice(0, 3).map(photo => 
+                                        `<img src="${photo.data}" alt="${photo.name}" onclick="openPhotoModal('${photo.data}')">`
+                                    ).join('')}
+                                    ${photos.length > 3 ? `<span style="font-size: 10px;">+${photos.length - 3}</span>` : ''}
+                                </div>
+                            </td>
+                            <td>
+                                <button class="btn btn-secondary btn-small" onclick="viewTrade(${trade.id})">View</button>
+                                <button class="btn btn-secondary btn-small" onclick="editTrade(${trade.id})">Edit</button>
+                                <button class="btn btn-danger btn-small" onclick="deleteTrade(${trade.id})">Delete</button>
+                            </td>
+                        </tr>
+                    `;
+                }).join('')}
+            </tbody>
+        </table>
+    `;
+
+    container.innerHTML = tableHTML;
+}
     debug('📊 Updating dashboard...');
     
     const selectedAccountId = document.getElementById('dashboard-account-selector')?.value;
@@ -2984,99 +3178,7 @@ function updatePortfolioOverview() {
     document.getElementById('portfolio-open-trades').textContent = openTrades;
 }
 
-function updateStatistics() {
-    debug('📈 Updating statistics...');
-    
-    const closedTrades = trades.filter(t => t.exit_price || t.exitPrice);
-    const winningTrades = closedTrades.filter(t => (t.pnl || 0) > 0);
-    const losingTrades = closedTrades.filter(t => (t.pnl || 0) < 0);
-
-    const totalTrades = trades.length;
-    const winRate = closedTrades.length > 0 ? (winningTrades.length / closedTrades.length * 100) : 0;
-    const totalPnL = closedTrades.reduce((sum, t) => sum + (t.pnl || 0), 0);
-    const avgWin = winningTrades.length > 0 ? winningTrades.reduce((sum, t) => sum + (t.pnl || 0), 0) / winningTrades.length : 0;
-    const avgLoss = losingTrades.length > 0 ? Math.abs(losingTrades.reduce((sum, t) => sum + (t.pnl || 0), 0) / losingTrades.length) : 0;
-    const profitFactor = avgLoss > 0 ? avgWin / avgLoss : 0;
-    
-    const largestWin = winningTrades.length > 0 ? Math.max(...winningTrades.map(t => t.pnl || 0)) : 0;
-    const largestLoss = losingTrades.length > 0 ? Math.min(...losingTrades.map(t => t.pnl || 0)) : 0;
-
-    // Calculate additional statistics
-    const planAdherentTrades = trades.filter(t => t.followed_plan || t.followedPlan);
-    const planAdherence = trades.length > 0 ? (planAdherentTrades.length / trades.length * 100) : 0;
-    
-    // Calculate consecutive wins/losses
-    let maxConsecutiveWins = 0;
-    let maxConsecutiveLosses = 0;
-    let currentWins = 0;
-    let currentLosses = 0;
-    
-    closedTrades.forEach(trade => {
-        if ((trade.pnl || 0) > 0) {
-            currentWins++;
-            currentLosses = 0;
-            maxConsecutiveWins = Math.max(maxConsecutiveWins, currentWins);
-        } else if ((trade.pnl || 0) < 0) {
-            currentLosses++;
-            currentWins = 0;
-            maxConsecutiveLosses = Math.max(maxConsecutiveLosses, currentLosses);
-        }
-    });
-    
-    // Calculate expectancy
-    const expectancy = closedTrades.length > 0 ? totalPnL / closedTrades.length : 0;
-    
-    // Calculate total fees
-    const totalFees = trades.reduce((sum, t) => sum + (t.commission || 0) + Math.abs(t.swap || 0), 0);
-    
-    // Calculate Sharpe ratio (simplified)
-    const returns = closedTrades.map(t => (t.pnl || 0));
-    const avgReturn = returns.length > 0 ? returns.reduce((sum, r) => sum + r, 0) / returns.length : 0;
-    const returnVariance = returns.length > 0 ? 
-        returns.reduce((sum, r) => sum + Math.pow(r - avgReturn, 2), 0) / returns.length : 0;
-    const returnStdDev = Math.sqrt(returnVariance);
-    const sharpeRatio = returnStdDev > 0 ? avgReturn / returnStdDev : 0;
-    
-    // Calculate average RRR
-    const tradesWithRRR = trades.filter(t => (t.stop_loss || t.stopLoss) && (t.take_profit || t.takeProfit) && (t.entry_price || t.entryPrice));
-    let avgRRR = 0;
-    
-    if (tradesWithRRR.length > 0) {
-        const totalRRR = tradesWithRRR.reduce((sum, trade) => {
-            const entryPrice = trade.entry_price || trade.entryPrice;
-            const stopLoss = trade.stop_loss || trade.stopLoss;
-            const takeProfit = trade.take_profit || trade.takeProfit;
-            const risk = Math.abs(entryPrice - stopLoss);
-            const reward = Math.abs(takeProfit - entryPrice);
-            return risk > 0 ? sum + (reward / risk) : sum;
-        }, 0);
-        avgRRR = totalRRR / tradesWithRRR.length;
-    }
-    
-    // Calculate unique trading days
-    const tradingDays = new Set(trades.map(t => new Date(t.date).toDateString())).size;
-
-    // Update the UI
-    document.getElementById('total-trades').textContent = totalTrades;
-    document.getElementById('win-rate').textContent = winRate.toFixed(1) + '%';
-    document.getElementById('total-pnl').textContent = totalPnL.toFixed(2);
-    document.getElementById('total-pnl').className = 'stat-value ' + (totalPnL >= 0 ? 'profit' : 'loss');
-    document.getElementById('avg-win').textContent = avgWin.toFixed(2);
-    document.getElementById('avg-loss').textContent = avgLoss.toFixed(2);
-    document.getElementById('profit-factor').textContent = profitFactor.toFixed(2);
-    document.getElementById('largest-win').textContent = largestWin.toFixed(2);
-    document.getElementById('largest-loss').textContent = largestLoss.toFixed(2);
-    document.getElementById('avg-rrr').textContent = avgRRR > 0 ? `1:${avgRRR.toFixed(2)}` : 'N/A';
-    document.getElementById('plan-adherence-stat').textContent = planAdherence.toFixed(1) + '%';
-    document.getElementById('consecutive-wins').textContent = maxConsecutiveWins;
-    document.getElementById('consecutive-losses').textContent = maxConsecutiveLosses;
-    document.getElementById('sharpe-ratio').textContent = sharpeRatio.toFixed(2);
-    document.getElementById('expectancy').textContent = expectancy.toFixed(2);
-    document.getElementById('total-fees').textContent = totalFees.toFixed(2);
-    document.getElementById('trading-days').textContent = tradingDays;
-}
-
-function updateAnalysis() {
+function updateDashboard() {
     debug('🔍 Updating analysis...');
     
     const container = document.getElementById('analysis-container');
@@ -3194,8 +3296,8 @@ function updateAnalysis() {
     container.innerHTML = analysisHTML;
 }
 
-// Continue with more functions...
-function updateCalendar() {
+// Remove the duplicate updateStats and updateTradesDisplay functions that were defined later
+function updateAnalysis() {
     debug('📅 Updating calendar...');
     
     const year = currentCalendarDate.getFullYear();
