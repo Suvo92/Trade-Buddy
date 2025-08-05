@@ -2726,12 +2726,14 @@ async function loadUserData() {
             tradingPlan = {};
         }
         
-        // Load profit target settings - skip if table doesn't exist
+        // Load profit target settings - handle multiple rows
         try {
             const { data: targetData, error: targetError } = await supabaseClient
                 .from('profit_targets')
                 .select('*')
                 .eq('user_id', user.id)
+                .order('updated_at', { ascending: false })
+                .limit(1)
                 .maybeSingle();
                 
             if (targetError) {
@@ -2747,17 +2749,33 @@ async function loadUserData() {
         
         debug(`✅ Loaded: ${trades.length} trades, ${accounts.length} accounts, ${customStrategies.length} strategies`);
         
-        // Update UI with loaded data
-        updateStrategyDropdowns();
-        updateStrategyList();
-        updateAccountDropdowns();
-        updateAccountList();
-        updateTradingPlanForm();
-        updateProfitTargetForm();
-        updateStats();
-        updateTradesDisplay();
-        updateDashboard();
-        updateTradingPlanTooltip();
+        // Update UI with loaded data - use setTimeout to ensure functions are available
+        setTimeout(() => {
+            try {
+                updateStrategyDropdowns();
+                updateStrategyList();
+                updateAccountDropdowns();
+                updateAccountList();
+                updateTradingPlanForm();
+                updateProfitTargetForm();
+                updateStats();
+                updateTradesDisplay();
+                updateDashboard();
+                updateTradingPlanTooltip();
+            } catch (error) {
+                console.log('Error updating UI:', error);
+                // Try again after a longer delay if functions aren't ready yet
+                setTimeout(() => {
+                    try {
+                        updateStats();
+                        updateTradesDisplay();
+                        updateDashboard();
+                    } catch (e) {
+                        console.log('Some functions still not ready:', e);
+                    }
+                }, 1000);
+            }
+        }, 100);
         
     } catch (error) {
         debug(`❌ Error loading user data: ${error.message}`);
@@ -2781,27 +2799,37 @@ async function saveTradeToSupabase(trade) {
         updated_at: new Date().toISOString()
     };
     
-    if (trade.id && typeof trade.id === 'number' && trade.id > 1000000000000) {
-        // This is a new trade (timestamp ID)
-        delete tradeData.id;
-        const { data, error } = await supabaseClient
-            .from('trades')
-            .insert(tradeData)
-            .select()
-            .single();
-            
-        if (error) throw error;
-        return data;
-    } else {
-        // This is an existing trade
-        const { data, error } = await supabaseClient
-            .from('trades')
-            .upsert(tradeData)
-            .select()
-            .single();
-            
-        if (error) throw error;
-        return data;
+    // Remove problematic fields that might not exist in the database
+    delete tradeData.timestamp;
+    delete tradeData.id; // Let Supabase generate the ID
+    
+    try {
+        if (currentEditId && typeof currentEditId === 'number' && currentEditId < 1000000000000) {
+            // This is an existing trade with a real database ID
+            const { data, error } = await supabaseClient
+                .from('trades')
+                .update(tradeData)
+                .eq('id', currentEditId)
+                .eq('user_id', user.id)
+                .select()
+                .single();
+                
+            if (error) throw error;
+            return data;
+        } else {
+            // This is a new trade
+            const { data, error } = await supabaseClient
+                .from('trades')
+                .insert(tradeData)
+                .select()
+                .single();
+                
+            if (error) throw error;
+            return data;
+        }
+    } catch (error) {
+        console.error('Supabase trade save error:', error);
+        throw error;
     }
 }
 
