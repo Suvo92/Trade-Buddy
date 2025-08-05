@@ -1,66 +1,4 @@
-@media (max-width: 768px) {
-            body {
-                padding: 10px;
-            }
-
-            .auth-container {
-                margin: 50px auto;
-                padding: 30px;
-            }
-
-            .container {
-                margin: 0;
-            }
-
-            .nav-tabs {
-                flex-direction: column;
-            }
-
-            .nav-tab {
-                flex: none;
-            }
-
-            .form-grid, .dashboard-grid {
-                grid-template-columns: 1fr;
-            }
-
-            .user-info {
-                position: relative;
-                top: auto;
-                right: auto;
-                margin-top: 10px;
-            }
-
-            .quick-stats {
-                grid-template-columns: repeat(2, 1fr);
-            }
-
-            .trades-table {
-                font-size: 12px;
-            }
-
-            .trades-table th, .trades-table td {
-                padding: 8px 5px;
-            }
-        }
-    </style>
-</head>
-<body>
-    <!-- Debug Panel -->
-    <div id="debug-panel" class="debug-panel">
-        <div id="debug-log">Starting...</div>
-    </div>
-
-    <!-- Auth Container -->
-    <div id="auth-container" class="auth-container">
-        <h1>📈 Trade Buddy</h1>
-        <div class="auth-form">
-            <form id="auth-form">
-                <input type="email" id="auth-email" class="auth-input" placeholder="Email" required>
-                <input type="password" id="auth-password" class="auth-input" placeholder="Password" required>
-                <button type="submit" id="auth-submit" class="auth-btn">Sign In</button>
-            </form>
-            <div class="auth-toggle">
+<div class="auth-toggle">
                 Don't have an account? <a id="auth-toggle-link">Sign up</a>
             </div>
         </div>
@@ -654,7 +592,659 @@ let accounts = [];
 let tradingPlan = {};
 let currentEditId = null;
 let currentPhotos = [];
-let sync<!DOCTYPE html>
+let syncStatus = 'synced';
+let currentCalendarDate = new Date();
+let profitTarget = {
+    enabled: false,
+    amount: 0,
+    period: 'monthly'
+};
+let appSettings = {
+    currency: 'USD',
+    timezone: 'auto'
+};
+
+// Calendar variables
+const monthNames = ["January", "February", "March", "April", "May", "June",
+    "July", "August", "September", "October", "November", "December"];
+
+debug('✅ Variables initialized');
+
+// Initialize the application
+async function initApp() {
+    debug('🚀 Initializing application...');
+    
+    try {
+        await new Promise(resolve => setTimeout(resolve, 100));
+        
+        const supabaseReady = await initSupabase();
+        if (!supabaseReady) {
+            debug('❌ Supabase initialization failed');
+            return;
+        }
+        
+        const authReady = setupAuth();
+        if (!authReady) {
+            debug('❌ Auth setup failed');
+            return;
+        }
+        
+        setupAuthListener();
+        
+        debug('✅ Application initialization complete');
+        
+    } catch (error) {
+        debug(`💥 Fatal initialization error: ${error.message}`);
+        showNotification(`Fatal error: ${error.message}`, 'error');
+    }
+}
+
+// Notification function
+function showNotification(message, type = 'success') {
+    debug(`📢 Notification: ${message} (${type})`);
+    
+    const existing = document.querySelectorAll('.notification');
+    existing.forEach(n => n.remove());
+    
+    const notification = document.createElement('div');
+    notification.className = `notification ${type}`;
+    notification.textContent = message;
+    document.body.appendChild(notification);
+
+    setTimeout(() => {
+        if (notification.parentNode) {
+            notification.remove();
+        }
+    }, 5000);
+}
+
+// Sync status management
+function updateSyncStatus(status) {
+    debug(`🔄 Sync status: ${status}`);
+    syncStatus = status;
+    const indicator = document.getElementById('sync-indicator');
+    const statusText = document.getElementById('sync-status-text');
+    
+    if (indicator && statusText) {
+        indicator.className = `sync-indicator ${status}`;
+        switch (status) {
+            case 'synced':
+                statusText.textContent = 'Synced';
+                break;
+            case 'syncing':
+                statusText.textContent = 'Syncing...';
+                break;
+            case 'error':
+                statusText.textContent = 'Error';
+                break;
+        }
+    }
+}
+
+// Initialize Supabase
+async function initSupabase() {
+    debug('📦 Checking for Supabase library...');
+    
+    if (typeof window.supabase === 'undefined') {
+        debug('❌ Supabase library not found');
+        showNotification('Supabase library failed to load', 'error');
+        return false;
+    }
+    
+    debug('✅ Supabase library found');
+    
+    try {
+        supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        debug('✅ Supabase client created');
+        
+        const { data, error } = await supabaseClient.auth.getSession();
+        if (error) {
+            debug(`❌ Connection test failed: ${error.message}`);
+            showNotification(`Connection error: ${error.message}`, 'error');
+            return false;
+        }
+        
+        debug('✅ Supabase connection successful');
+        
+        if (data.session) {
+            debug(`👤 Found existing session: ${data.session.user.email}`);
+            user = data.session.user;
+            showMainApp();
+            return true;
+        } else {
+            debug('👤 No existing session');
+            showAuthScreen();
+            return true;
+        }
+        
+    } catch (error) {
+        debug(`❌ Supabase initialization error: ${error.message}`);
+        showNotification(`Initialization error: ${error.message}`, 'error');
+        return false;
+    }
+}
+
+// Setup authentication
+function setupAuth() {
+    debug('🔐 Setting up authentication...');
+    
+    const authForm = document.getElementById('auth-form');
+    const emailInput = document.getElementById('auth-email');
+    const passwordInput = document.getElementById('auth-password');
+    const submitBtn = document.getElementById('auth-submit');
+    const toggleLink = document.getElementById('auth-toggle-link');
+    
+    if (!authForm || !emailInput || !passwordInput || !submitBtn || !toggleLink) {
+        debug('❌ Missing auth form elements');
+        return false;
+    }
+    
+    debug('✅ Auth form elements found');
+    
+    authForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        debug('📝 Auth form submitted');
+        
+        const email = emailInput.value.trim();
+        const password = passwordInput.value;
+        
+        if (!email || !password) {
+            showNotification('Please fill in all fields', 'error');
+            return;
+        }
+        
+        if (!supabaseClient) {
+            showNotification('Authentication service not ready', 'error');
+            return;
+        }
+        
+        const originalText = submitBtn.textContent;
+        submitBtn.disabled = true;
+        submitBtn.textContent = isSignUp ? 'Signing up...' : 'Signing in...';
+        
+        try {
+            debug(`🔑 Attempting ${isSignUp ? 'sign up' : 'sign in'}...`);
+            
+            let result;
+            if (isSignUp) {
+                result = await supabaseClient.auth.signUp({ email, password });
+            } else {
+                result = await supabaseClient.auth.signInWithPassword({ email, password });
+            }
+            
+            if (result.error) {
+                throw result.error;
+            }
+            
+            if (result.data?.user) {
+                debug('✅ Authentication successful');
+                user = result.data.user;
+                showMainApp();
+            }
+            
+        } catch (error) {
+            debug(`💥 Auth failed: ${error.message}`);
+            showNotification(error.message, 'error');
+        } finally {
+            submitBtn.disabled = false;
+            submitBtn.textContent = originalText;
+        }
+    });
+    
+    toggleLink.addEventListener('click', (e) => {
+        e.preventDefault();
+        isSignUp = !isSignUp;
+        
+        const toggleDiv = document.querySelector('.auth-toggle');
+        if (isSignUp) {
+            submitBtn.textContent = 'Sign Up';
+            toggleDiv.innerHTML = 'Already have an account? <a id="auth-toggle-link">Sign in</a>';
+        } else {
+            submitBtn.textContent = 'Sign In';
+            toggleDiv.innerHTML = 'Don\'t have an account? <a id="auth-toggle-link">Sign up</a>';
+        }
+        
+        const newToggleLink = document.getElementById('auth-toggle-link');
+        if (newToggleLink) {
+            newToggleLink.addEventListener('click', arguments.callee);
+        }
+    });
+    
+    debug('✅ Authentication setup complete');
+    return true;
+}
+
+// Show auth screen
+function showAuthScreen() {
+    debug('🔐 Showing authentication screen');
+    
+    const authContainer = document.getElementById('auth-container');
+    const mainContainer = document.getElementById('main-container');
+    
+    if (authContainer && mainContainer) {
+        authContainer.style.display = 'block';
+        mainContainer.style.display = 'none';
+    }
+}
+
+// Show main app
+function showMainApp() {
+    debug('🏠 Showing main application');
+    
+    const authContainer = document.getElementById('auth-container');
+    const mainContainer = document.getElementById('main-container');
+    const userEmailElement = document.getElementById('user-email');
+    
+    if (authContainer && mainContainer) {
+        authContainer.style.display = 'none';
+        mainContainer.style.display = 'block';
+        
+        if (userEmailElement && user?.email) {
+            userEmailElement.textContent = user.email;
+        }
+        
+        debug('✅ Main app displayed');
+        setupMainApp();
+        loadData();
+        showNotification('Welcome to Trade Buddy!', 'success');
+    }
+}
+
+// Setup main app functionality
+function setupMainApp() {
+    debug('⚙️ Setting up main app...');
+    
+    const navTabs = document.querySelectorAll('.nav-tab');
+    navTabs.forEach(tab => {
+        tab.addEventListener('click', function() {
+            const tabId = this.getAttribute('data-tab');
+            showTab(tabId);
+        });
+    });
+    
+    const tradeForm = document.getElementById('trade-form');
+    if (tradeForm) {
+        tradeForm.addEventListener('submit', saveTrade);
+    }
+    
+    const dateInput = document.getElementById('date');
+    if (dateInput) {
+        const now = new Date();
+        now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+        dateInput.value = now.toISOString().slice(0, 16);
+    }
+    
+    setupFilterListeners();
+    
+    const logoutBtn = document.getElementById('logout-btn');
+    if (logoutBtn) {
+        logoutBtn.addEventListener('click', async () => {
+            debug('🚪 Logout clicked');
+            try {
+                await supabaseClient.auth.signOut();
+                user = null;
+                showAuthScreen();
+                showNotification('Signed out successfully', 'success');
+            } catch (error) {
+                showNotification(`Logout error: ${error.message}`, 'error');
+            }
+        });
+    }
+    
+    setupPhotoUpload();
+    
+    debug('✅ Main app setup complete');
+}
+
+function setupFilterListeners() {
+    const filterElements = [
+        'search-symbol', 'filter-strategy', 'filter-outcome', 
+        'filter-plan-followed', 'filter-date-from', 'filter-date-to', 'filter-account'
+    ];
+    
+    filterElements.forEach(elementId => {
+        const element = document.getElementById(elementId);
+        if (element) {
+            element.addEventListener('input', updateTradesDisplay);
+            element.addEventListener('change', updateTradesDisplay);
+        }
+    });
+}
+
+// Auth state change listener
+function setupAuthListener() {
+    if (supabaseClient) {
+        supabaseClient.auth.onAuthStateChange((event, session) => {
+            debug(`🔄 Auth state change: ${event}`);
+            
+            if (event === 'SIGNED_IN' && session) {
+                user = session.user;
+                debug(`✅ User signed in: ${user.email}`);
+                showMainApp();
+            } else if (event === 'SIGNED_OUT') {
+                user = null;
+                debug('👋 User signed out');
+                showAuthScreen();
+            }
+        });
+        debug('✅ Auth state listener setup');
+    }
+}
+
+// Photo upload functionality
+function setupPhotoUpload() {
+    const photoInput = document.getElementById('photo-input');
+    const dropZone = document.getElementById('photo-drop-zone');
+
+    if (photoInput) {
+        photoInput.addEventListener('change', handleFileSelect);
+    }
+
+    if (dropZone) {
+        dropZone.addEventListener('dragover', function(e) {
+            e.preventDefault();
+            dropZone.style.borderColor = '#007bff';
+        });
+
+        dropZone.addEventListener('dragleave', function(e) {
+            e.preventDefault();
+            dropZone.style.borderColor = '#dee2e6';
+        });
+
+        dropZone.addEventListener('drop', function(e) {
+            e.preventDefault();
+            dropZone.style.borderColor = '#dee2e6';
+            const files = e.dataTransfer.files;
+            handleFiles(files);
+        });
+    }
+}
+
+function handleFileSelect(e) {
+    handleFiles(e.target.files);
+}
+
+function handleFiles(files) {
+    for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        if (file.type.startsWith('image/')) {
+            if (file.size > 5 * 1024 * 1024) {
+                showNotification('Photo ' + file.name + ' is too large (max 5MB)', 'error');
+                continue;
+            }
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const photoData = {
+                    id: Date.now() + Math.random(),
+                    name: file.name,
+                    data: e.target.result,
+                    timestamp: new Date().toISOString()
+                };
+                currentPhotos.push(photoData);
+                updatePhotoPreview();
+            };
+            reader.readAsDataURL(file);
+        } else {
+            showNotification('File ' + file.name + ' is not an image', 'error');
+        }
+    }
+}
+
+function updatePhotoPreview() {
+    const preview = document.getElementById('photo-preview');
+    if (!preview) return;
+    
+    preview.innerHTML = '';
+    
+    currentPhotos.forEach(photo => {
+        const photoItem = document.createElement('div');
+        photoItem.className = 'photo-item';
+        photoItem.innerHTML = `
+            <img src="${photo.data}" alt="${photo.name}" onclick="openPhotoModal('${photo.data}')">
+            <button class="remove-photo" onclick="removePhoto('${photo.id}')" title="Remove photo">×</button>
+        `;
+        preview.appendChild(photoItem);
+    });
+}
+
+function openPhotoModal(imageSrc) {
+    document.getElementById('modal-photo').src = imageSrc;
+    document.getElementById('photo-modal').style.display = 'block';
+}
+
+function closePhotoModal() {
+    document.getElementById('photo-modal').style.display = 'none';
+}
+
+function removePhoto(photoId) {
+    currentPhotos = currentPhotos.filter(photo => photo.id != photoId);
+    updatePhotoPreview();
+}
+
+// Tab switching
+function showTab(tabId) {
+    debug(`🔄 Switching to tab: ${tabId}`);
+    
+    document.querySelectorAll('.tab-content').forEach(tab => {
+        tab.classList.remove('active');
+    });
+    
+    document.querySelectorAll('.nav-tab').forEach(tab => {
+        tab.classList.remove('active');
+    });
+    
+    const activeTab = document.getElementById(tabId);
+    const activeNavTab = document.querySelector(`[data-tab="${tabId}"]`);
+    
+    if (activeTab && activeNavTab) {
+        activeTab.classList.add('active');
+        activeNavTab.classList.add('active');
+        
+        if (tabId === 'dashboard') {
+            updateDashboard();
+        } else if (tabId === 'statistics') {
+            updateStatistics();
+        } else if (tabId === 'analysis') {
+            updateAnalysis();
+        }
+    }
+}
+
+// Placeholder functions - these would contain the full implementations
+function loadData() {
+    debug('📊 Loading user data...');
+    // Implementation would go here
+}
+
+function updateDashboard() {
+    debug('📊 Updating dashboard...');
+    // Implementation would go here
+}
+
+function updateStatistics() {
+    debug('📈 Updating statistics...');
+    // Implementation would go here
+}
+
+function updateAnalysis() {
+    debug('🔍 Updating analysis...');
+    // Implementation would go here
+}
+
+function updateTradesDisplay() {
+    debug('📊 Updating trades display...');
+    // Implementation would go here
+}
+
+function saveTrade(e) {
+    e.preventDefault();
+    debug('💾 Saving trade...');
+    // Implementation would go here
+}
+
+// Account management functions
+function showAddAccountForm() {
+    const form = document.getElementById('add-account-form');
+    if (form) form.classList.add('active');
+}
+
+function cancelAddAccount() {
+    const form = document.getElementById('add-account-form');
+    if (form) form.classList.remove('active');
+}
+
+function addAccount() {
+    debug('➕ Adding account...');
+    // Implementation would go here
+}
+
+function deleteAccount(id) {
+    debug(`🗑️ Deleting account ${id}...`);
+    // Implementation would go here
+}
+
+// Trading plan functions
+function saveTradingPlan() {
+    debug('💾 Saving trading plan...');
+    // Implementation would go here
+}
+
+function clearTradingPlan() {
+    debug('🔄 Clearing trading plan...');
+    // Implementation would go here
+}
+
+// Calendar functions
+function previousMonth() {
+    currentCalendarDate.setMonth(currentCalendarDate.getMonth() - 1);
+    updateCalendar();
+}
+
+function nextMonth() {
+    currentCalendarDate.setMonth(currentCalendarDate.getMonth() + 1);
+    updateCalendar();
+}
+
+function goToCurrentMonth() {
+    currentCalendarDate = new Date();
+    updateCalendar();
+}
+
+function updateCalendar() {
+    debug('📅 Updating calendar...');
+    // Implementation would go here
+}
+
+// Trade management functions
+function viewTrade(id) {
+    debug(`👁️ Viewing trade ${id}...`);
+    // Implementation would go here
+}
+
+function editTrade(id) {
+    debug(`✏️ Editing trade ${id}...`);
+    // Implementation would go here
+}
+
+function deleteTrade(id) {
+    debug(`🗑️ Deleting trade ${id}...`);
+    // Implementation would go here
+}
+
+function closeTradeViewModal() {
+    document.getElementById('trade-view-modal').style.display = 'none';
+}
+
+// Filter functions
+function clearFilters() {
+    debug('🔄 Clearing filters...');
+    // Implementation would go here
+}
+
+// Export functions
+function exportTrades() {
+    debug('📤 Exporting trades...');
+    // Implementation would go here
+}
+
+function exportTradesDetailed() {
+    debug('📋 Exporting detailed trades...');
+    // Implementation would go here
+}
+
+function exportBackup() {
+    debug('📤 Exporting backup...');
+    // Implementation would go here
+}
+
+function importBackup() {
+    debug('📥 Importing backup...');
+    // Implementation would go here
+}
+
+// Profit target functions
+function saveProfitTarget() {
+    debug('🎯 Saving profit target...');
+    // Implementation would go here
+}
+
+// Settings functions
+function saveAppSettings() {
+    debug('⚙️ Saving app settings...');
+    // Implementation would go here
+}
+
+// Global functions for onclick events
+window.showTab = showTab;
+window.showAddAccountForm = showAddAccountForm;
+window.cancelAddAccount = cancelAddAccount;
+window.addAccount = addAccount;
+window.deleteAccount = deleteAccount;
+window.editTrade = editTrade;
+window.deleteTrade = deleteTrade;
+window.viewTrade = viewTrade;
+window.closeTradeViewModal = closeTradeViewModal;
+window.saveTradingPlan = saveTradingPlan;
+window.clearTradingPlan = clearTradingPlan;
+window.openPhotoModal = openPhotoModal;
+window.closePhotoModal = closePhotoModal;
+window.removePhoto = removePhoto;
+window.previousMonth = previousMonth;
+window.nextMonth = nextMonth;
+window.goToCurrentMonth = goToCurrentMonth;
+window.exportBackup = exportBackup;
+window.exportTrades = exportTrades;
+window.exportTradesDetailed = exportTradesDetailed;
+window.importBackup = importBackup;
+window.clearFilters = clearFilters;
+window.saveProfitTarget = saveProfitTarget;
+window.saveAppSettings = saveAppSettings;
+
+// DOM ready event
+document.addEventListener('DOMContentLoaded', () => {
+    debug('📄 DOM Content Loaded');
+    setTimeout(() => {
+        debug('🚀 Starting app initialization...');
+        initApp();
+    }, 100);
+});
+
+// Safety check - run if DOM already loaded
+if (document.readyState === 'loading') {
+    debug('📄 Document still loading...');
+} else {
+    debug('📄 Document already loaded');
+    setTimeout(() => {
+        debug('🚀 Starting immediate initialization...');
+        initApp();
+    }, 100);
+}
+
+debug('📜 Phase 4 script setup complete');
+</script>
+</body>
+</html><!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -1185,7 +1775,6 @@ let sync<!DOCTYPE html>
             to { transform: translateX(0); }
         }
 
-        /* Statistics and Analysis specific styles */
         .stats-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
@@ -1310,7 +1899,7 @@ let sync<!DOCTYPE html>
             overflow: hidden;
         }
 
-        .profit-target-section h4 {
+        .profit-target-section h3 {
             color: white;
             margin-bottom: 20px;
         }
@@ -1360,7 +1949,6 @@ let sync<!DOCTYPE html>
             margin-top: 10px;
         }
 
-        /* Calendar specific styles */
         .calendar-controls {
             display: flex;
             align-items: center;
@@ -1461,7 +2049,6 @@ let sync<!DOCTYPE html>
             margin-top: auto;
         }
 
-        /* Photo upload styles */
         .photo-upload-section {
             background: #f8f9fa;
             border: 2px dashed #dee2e6;
@@ -1532,7 +2119,6 @@ let sync<!DOCTYPE html>
             justify-content: center;
         }
 
-        /* Photo modal */
         .photo-modal {
             display: none;
             position: fixed;
@@ -1571,7 +2157,6 @@ let sync<!DOCTYPE html>
             cursor: pointer;
         }
 
-        /* Trading plan styles */
         .plan-adherence {
             display: flex;
             align-items: center;
@@ -1602,7 +2187,6 @@ let sync<!DOCTYPE html>
             margin-bottom: 10px;
         }
 
-        /* Trade view modal */
         .trade-view-modal {
             display: none;
             position: fixed;
@@ -1681,4 +2265,62 @@ let sync<!DOCTYPE html>
                 padding: 10px;
             }
 
-            .auth-
+            .auth-container {
+                margin: 50px auto;
+                padding: 30px;
+            }
+
+            .container {
+                margin: 0;
+            }
+
+            .nav-tabs {
+                flex-direction: column;
+            }
+
+            .nav-tab {
+                flex: none;
+            }
+
+            .form-grid, .dashboard-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .user-info {
+                position: relative;
+                top: auto;
+                right: auto;
+                margin-top: 10px;
+            }
+
+            .quick-stats {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .trades-table {
+                font-size: 12px;
+            }
+
+            .trades-table th, .trades-table td {
+                padding: 8px 5px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Debug Panel -->
+    <div id="debug-panel" class="debug-panel">
+        <div id="debug-log">Starting...</div>
+    </div>
+
+    <!-- Auth Container -->
+    <div id="auth-container" class="auth-container">
+        <h1>📈 Trade Buddy</h1>
+        <div class="auth-form">
+            <form id="auth-form">
+                <input type="email" id="auth-email" class="auth-input" placeholder="Email" required>
+                <input type="password" id="auth-password" class="auth-input" placeholder="Password" required>
+                <button type="submit" id="auth-submit" class="auth-btn">Sign In</button>
+            </form>
+            <div class="auth-toggle">
+                Don't have an account? <a id="auth-toggle
