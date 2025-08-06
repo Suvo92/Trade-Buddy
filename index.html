@@ -2293,8 +2293,7 @@ async function saveTradingPlan() {
     updateSyncStatus('syncing');
     
     try {
-        const plan = {
-            user_id: user.id,
+        const planData = {
             entry_criteria: document.getElementById('entry-criteria').value,
             profit_targets: document.getElementById('profit-targets').value,
             stop_loss_rules: document.getElementById('stop-loss-rules').value,
@@ -2305,20 +2304,37 @@ async function saveTradingPlan() {
             trading_hours: document.getElementById('trading-hours').value,
             avoid_times: document.getElementById('avoid-times').value,
             emotional_rules: document.getElementById('emotional-rules').value,
-            created_at: new Date().toISOString(),
             updated_at: new Date().toISOString()
         };
 
-        // Upsert to Supabase
-        const { data, error } = await supabaseClient
-            .from('trading_plans')
-            .upsert(plan, { onConflict: 'user_id' })
-            .select()
-            .single();
-            
-        if (error) throw error;
+        let result;
         
-        tradingPlan = data;
+        // Check if plan exists
+        if (tradingPlan && tradingPlan.id) {
+            // Update existing plan
+            result = await supabaseClient
+                .from('trading_plans')
+                .update(planData)
+                .eq('id', tradingPlan.id)
+                .eq('user_id', user.id)
+                .select()
+                .single();
+        } else {
+            // Create new plan
+            result = await supabaseClient
+                .from('trading_plans')
+                .insert({
+                    user_id: user.id,
+                    ...planData,
+                    created_at: new Date().toISOString()
+                })
+                .select()
+                .single();
+        }
+        
+        if (result.error) throw result.error;
+        
+        tradingPlan = result.data;
         updateTradingPlanTooltip();
         
         updateSyncStatus('synced');
@@ -2349,13 +2365,16 @@ async function clearTradingPlan() {
             document.getElementById('avoid-times').value = '';
             document.getElementById('emotional-rules').value = '';
             
-            // Delete from Supabase
+            // Delete from Supabase (delete all plans for this user to be safe)
             const { error } = await supabaseClient
                 .from('trading_plans')
                 .delete()
                 .eq('user_id', user.id);
                 
-            if (error) throw error;
+            if (error && error.code !== 'PGRST116') {
+                // Only throw error if it's not a "no rows found" error
+                throw error;
+            }
             
             tradingPlan = {};
             updateTradingPlanTooltip();
