@@ -694,6 +694,77 @@
             transform: scale(1.2);
         }
 
+        .plan-adherence {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin: 15px 0;
+            padding: 12px;
+            background: #e7f3ff;
+            border-radius: 8px;
+            border: 1px solid #b3d9ff;
+        }
+
+        .plan-checkbox {
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+        }
+
+        .plan-tooltip {
+            position: relative;
+            display: inline-block;
+            cursor: help;
+        }
+
+        .plan-tooltip .tooltiptext {
+            visibility: hidden;
+            width: 300px;
+            background-color: #2c3e50;
+            color: white;
+            text-align: left;
+            border-radius: 8px;
+            padding: 15px;
+            position: absolute;
+            z-index: 1001;
+            bottom: 125%;
+            left: 50%;
+            margin-left: -150px;
+            opacity: 0;
+            transition: opacity 0.3s;
+            font-size: 14px;
+            line-height: 1.4;
+        }
+
+        .plan-tooltip .tooltiptext::after {
+            content: "";
+            position: absolute;
+            top: 100%;
+            left: 50%;
+            margin-left: -5px;
+            border-width: 5px;
+            border-style: solid;
+            border-color: #2c3e50 transparent transparent transparent;
+        }
+
+        .plan-tooltip:hover .tooltiptext {
+            visibility: visible;
+            opacity: 1;
+        }
+
+        .plan-item {
+            margin: 10px 0;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border-left: 4px solid #007bff;
+        }
+
+        .plan-item h5 {
+            color: #2c3e50;
+            margin-bottom: 10px;
+        }
+
         @media (max-width: 768px) {
             body {
                 padding: 10px;
@@ -772,6 +843,7 @@
         <div class="nav-tabs">
             <button class="nav-tab active" data-tab="dashboard">Dashboard</button>
             <button class="nav-tab" data-tab="add-trade">Add Trade</button>
+            <button class="nav-tab" data-tab="trading-plan">Trading Plan</button>
             <button class="nav-tab" data-tab="accounts">Accounts</button>
             <button class="nav-tab" data-tab="trades">Trade History</button>
             <button class="nav-tab" data-tab="statistics">Statistics</button>
@@ -818,6 +890,10 @@
                         <div class="quick-stat">
                             <div class="quick-stat-value" id="dash-avg-rrr">N/A</div>
                             <div class="quick-stat-label">Avg RRR</div>
+                        </div>
+                        <div class="quick-stat">
+                            <div class="quick-stat-value" id="dash-plan-adherence">0%</div>
+                            <div class="quick-stat-label">Plan Adherence</div>
                         </div>
                     </div>
                 </div>
@@ -951,6 +1027,19 @@
                         </div>
                     </div>
                     
+                    <!-- Trading Plan Adherence -->
+                    <div class="plan-adherence">
+                        <input type="checkbox" id="followed-plan" class="plan-checkbox">
+                        <label for="followed-plan">Followed Trading Plan?</label>
+                        <div class="plan-tooltip">
+                            ℹ️
+                            <span class="tooltiptext" id="plan-tooltip-text">
+                                No trading plan defined yet.<br>
+                                Go to Trading Plan tab to create your plan.
+                            </span>
+                        </div>
+                    </div>
+                    
                     <div class="form-group">
                         <label for="setup-description">Setup Description</label>
                         <textarea id="setup-description" placeholder="Describe your trade setup, technical analysis, entry/exit criteria, and reasoning..."></textarea>
@@ -982,6 +1071,92 @@
 
                     <button type="submit" class="btn btn-primary">💾 Save Trade</button>
                     <button type="reset" class="btn btn-secondary">🔄 Clear Form</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Trading Plan Tab -->
+        <div id="trading-plan" class="tab-content">
+            <div class="form-section">
+                <h3>📋 Trading Plan</h3>
+                <p style="margin-bottom: 20px; color: #6c757d;">
+                    Define your trading rules and criteria. This plan will be referenced when adding trades to track your discipline.
+                </p>
+                
+                <form id="trading-plan-form">
+                    <div class="plan-item">
+                        <h5>🎯 Entry Criteria</h5>
+                        <div class="form-group">
+                            <textarea id="entry-criteria" placeholder="Define your entry criteria (technical indicators, chart patterns, setups, confirmations needed, etc.)"></textarea>
+                        </div>
+                    </div>
+
+                    <div class="plan-item">
+                        <h5>🚪 Exit Criteria</h5>
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label for="profit-targets">Profit Target Rules</label>
+                                <textarea id="profit-targets" placeholder="When and how do you take profits? (R:R ratios, percentage targets, technical levels, etc.)"></textarea>
+                            </div>
+                            <div class="form-group">
+                                <label for="stop-loss-rules">Stop Loss Rules</label>
+                                <textarea id="stop-loss-rules" placeholder="How do you set stop losses? (percentage, technical levels, trailing stops, etc.)"></textarea>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="plan-item">
+                        <h5>💰 Risk Management</h5>
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label for="position-sizing">Position Sizing Rules</label>
+                                <textarea id="position-sizing" placeholder="How do you calculate position size? (% of account, fixed dollar amount, volatility-based, etc.)"></textarea>
+                            </div>
+                            <div class="form-group">
+                                <label for="daily-loss-limit">Daily/Weekly Loss Limits</label>
+                                <textarea id="daily-loss-limit" placeholder="What are your maximum daily/weekly loss limits? When do you stop trading?"></textarea>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="plan-item">
+                        <h5>🌍 Market Conditions</h5>
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label for="trading-conditions">Ideal Trading Conditions</label>
+                                <textarea id="trading-conditions" placeholder="What market conditions do you trade best in? (trending, ranging, high/low volatility, etc.)"></textarea>
+                            </div>
+                            <div class="form-group">
+                                <label for="avoid-conditions">Conditions to Avoid</label>
+                                <textarea id="avoid-conditions" placeholder="When should you NOT trade? (news events, low liquidity times, etc.)"></textarea>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="plan-item">
+                        <h5>⏰ Trading Schedule</h5>
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label for="trading-hours">Trading Hours</label>
+                                <textarea id="trading-hours" placeholder="What are your optimal trading hours? When are you most focused?"></textarea>
+                            </div>
+                            <div class="form-group">
+                                <label for="avoid-times">Times to Avoid</label>
+                                <textarea id="avoid-times" placeholder="When should you avoid trading? (news releases, end of day, etc.)"></textarea>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="plan-item">
+                        <h5>🧠 Emotional Rules</h5>
+                        <div class="form-group">
+                            <label for="emotional-rules">Psychological Guidelines</label>
+                            <textarea id="emotional-rules" placeholder="Rules for managing emotions (no revenge trading, walk away after X losses, meditation before trading, etc.)"></textarea>
+                        </div>
+                    </div>
+
+                    <button type="button" class="btn btn-primary" onclick="saveTradingPlan()">💾 Save Trading Plan</button>
+                    <button type="button" class="btn btn-secondary" onclick="clearTradingPlan()">🔄 Clear Plan</button>
                 </form>
             </div>
         </div>
@@ -1116,6 +1291,7 @@ let trades = [];
 let accounts = [];
 let syncStatus = 'synced';
 let currentPhotos = [];
+let tradingPlan = {};
 
 debug('✅ Variables initialized');
 
@@ -1497,13 +1673,36 @@ async function loadData() {
             accounts = [];
         }
         
-        debug(`✅ Loaded: ${trades.length} trades, ${accounts.length} accounts`);
+        // Load trading plan
+        try {
+            const { data: planData, error: planError } = await supabaseClient
+                .from('trading_plans')
+                .select('*')
+                .eq('user_id', user.id)
+                .single();
+                
+            if (planError) {
+                if (planError.code !== 'PGRST116' && planError.code !== 'PGRST103') {
+                    console.log('Trading plan load error:', planError);
+                }
+                tradingPlan = {};
+            } else {
+                tradingPlan = planData || {};
+            }
+        } catch (e) {
+            console.log('Trading plan table might not exist yet');
+            tradingPlan = {};
+        }
+        
+        debug(`✅ Loaded: ${trades.length} trades, ${accounts.length} accounts, trading plan: ${Object.keys(tradingPlan).length > 0 ? 'Yes' : 'No'}`);
         
         // Update UI
         setTimeout(() => {
             updateDashboard();
             updateTradesDisplay();
             updateAccountList();
+            updateTradingPlanForm();
+            updateTradingPlanTooltip();
         }, 100);
         
         updateSyncStatus('synced');
@@ -1581,13 +1780,19 @@ function updateDashboard() {
         avgRRR = totalRRR / tradesWithRRR.length;
     }
 
+    // Calculate plan adherence
+    const tradesWithPlanData = filteredTrades.filter(t => t.hasOwnProperty('followed_plan') || t.hasOwnProperty('followedPlan'));
+    const planAdherence = tradesWithPlanData.length > 0 ? 
+        (tradesWithPlanData.filter(t => t.followed_plan || t.followedPlan).length / tradesWithPlanData.length * 100) : 0;
+
     // Update dashboard elements if they exist
     const dashElements = {
         'dash-total-trades': totalTrades,
         'dash-win-rate': winRate.toFixed(1) + '%',
         'dash-total-pnl': totalPnL.toFixed(2),
         'dash-profit-factor': profitFactor.toFixed(2),
-        'dash-avg-rrr': avgRRR > 0 ? `1:${avgRRR.toFixed(2)}` : 'N/A'
+        'dash-avg-rrr': avgRRR > 0 ? `1:${avgRRR.toFixed(2)}` : 'N/A',
+        'dash-plan-adherence': planAdherence.toFixed(1) + '%'
     };
 
     Object.entries(dashElements).forEach(([id, value]) => {
@@ -1669,6 +1874,7 @@ async function saveTrade(e) {
             market_condition: document.getElementById('market-condition').value,
             risk_rating: document.getElementById('risk-rating').value,
             confidence: document.getElementById('confidence').value,
+            followed_plan: document.getElementById('followed-plan').checked,
             setup_description: document.getElementById('setup-description').value,
             emotions: document.getElementById('emotions').value,
             lessons: document.getElementById('lessons').value,
@@ -1860,6 +2066,7 @@ function updateTradesDisplay() {
                     <th>%</th>
                     <th>Status</th>
                     <th>Strategy</th>
+                    <th>Plan</th>
                     <th>Photos</th>
                     <th>Actions</th>
                 </tr>
@@ -1898,6 +2105,12 @@ function updateTradesDisplay() {
                             </td>
                             <td>${trade.status || (exitPrice ? 'Closed' : 'Open')}</td>
                             <td>${trade.strategy || '-'}</td>
+                            <td>
+                                ${trade.hasOwnProperty('followed_plan') || trade.hasOwnProperty('followedPlan') ? 
+                                    `<span class="plan-indicator ${(trade.followed_plan || trade.followedPlan) ? 'plan-followed' : 'plan-not-followed'}">
+                                        ${(trade.followed_plan || trade.followedPlan) ? '✅' : '❌'}
+                                    </span>` : '-'}
+                            </td>
                             <td>
                                 <div class="trade-photos">
                                     ${photos.slice(0, 3).map(photo => 
@@ -2072,6 +2285,131 @@ function closePhotoModal() {
 function removePhoto(photoId) {
     currentPhotos = currentPhotos.filter(photo => photo.id != photoId);
     updatePhotoPreview();
+}
+
+// Trading Plan Management
+async function saveTradingPlan() {
+    debug('💾 Saving trading plan...');
+    updateSyncStatus('syncing');
+    
+    try {
+        const plan = {
+            user_id: user.id,
+            entry_criteria: document.getElementById('entry-criteria').value,
+            profit_targets: document.getElementById('profit-targets').value,
+            stop_loss_rules: document.getElementById('stop-loss-rules').value,
+            position_sizing: document.getElementById('position-sizing').value,
+            daily_loss_limit: document.getElementById('daily-loss-limit').value,
+            trading_conditions: document.getElementById('trading-conditions').value,
+            avoid_conditions: document.getElementById('avoid-conditions').value,
+            trading_hours: document.getElementById('trading-hours').value,
+            avoid_times: document.getElementById('avoid-times').value,
+            emotional_rules: document.getElementById('emotional-rules').value,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+        };
+
+        // Upsert to Supabase
+        const { data, error } = await supabaseClient
+            .from('trading_plans')
+            .upsert(plan, { onConflict: 'user_id' })
+            .select()
+            .single();
+            
+        if (error) throw error;
+        
+        tradingPlan = data;
+        updateTradingPlanTooltip();
+        
+        updateSyncStatus('synced');
+        showNotification('Trading plan saved successfully', 'success');
+        
+    } catch (error) {
+        debug(`❌ Error saving trading plan: ${error.message}`);
+        updateSyncStatus('error');
+        showNotification(`Error saving trading plan: ${error.message}`, 'error');
+    }
+}
+
+async function clearTradingPlan() {
+    if (confirm('Are you sure you want to clear the trading plan?')) {
+        debug('🗑️ Clearing trading plan...');
+        updateSyncStatus('syncing');
+        
+        try {
+            // Clear form
+            document.getElementById('entry-criteria').value = '';
+            document.getElementById('profit-targets').value = '';
+            document.getElementById('stop-loss-rules').value = '';
+            document.getElementById('position-sizing').value = '';
+            document.getElementById('daily-loss-limit').value = '';
+            document.getElementById('trading-conditions').value = '';
+            document.getElementById('avoid-conditions').value = '';
+            document.getElementById('trading-hours').value = '';
+            document.getElementById('avoid-times').value = '';
+            document.getElementById('emotional-rules').value = '';
+            
+            // Delete from Supabase
+            const { error } = await supabaseClient
+                .from('trading_plans')
+                .delete()
+                .eq('user_id', user.id);
+                
+            if (error) throw error;
+            
+            tradingPlan = {};
+            updateTradingPlanTooltip();
+            
+            updateSyncStatus('synced');
+            showNotification('Trading plan cleared', 'success');
+            
+        } catch (error) {
+            debug(`❌ Error clearing trading plan: ${error.message}`);
+            updateSyncStatus('error');
+            showNotification(`Error clearing trading plan: ${error.message}`, 'error');
+        }
+    }
+}
+
+function updateTradingPlanForm() {
+    if (tradingPlan && Object.keys(tradingPlan).length > 0) {
+        document.getElementById('entry-criteria').value = tradingPlan.entry_criteria || '';
+        document.getElementById('profit-targets').value = tradingPlan.profit_targets || '';
+        document.getElementById('stop-loss-rules').value = tradingPlan.stop_loss_rules || '';
+        document.getElementById('position-sizing').value = tradingPlan.position_sizing || '';
+        document.getElementById('daily-loss-limit').value = tradingPlan.daily_loss_limit || '';
+        document.getElementById('trading-conditions').value = tradingPlan.trading_conditions || '';
+        document.getElementById('avoid-conditions').value = tradingPlan.avoid_conditions || '';
+        document.getElementById('trading-hours').value = tradingPlan.trading_hours || '';
+        document.getElementById('avoid-times').value = tradingPlan.avoid_times || '';
+        document.getElementById('emotional-rules').value = tradingPlan.emotional_rules || '';
+    }
+}
+
+function updateTradingPlanTooltip() {
+    const tooltip = document.getElementById('plan-tooltip-text');
+    if (!tooltip) return;
+
+    let tooltipText = 'Trading Plan Rules:<br><br>';
+    
+    if (tradingPlan.entry_criteria) {
+        tooltipText += `Entry Criteria:<br>${tradingPlan.entry_criteria.substring(0, 100)}${tradingPlan.entry_criteria.length > 100 ? '...' : ''}<br><br>`;
+    }
+    if (tradingPlan.profit_targets) {
+        tooltipText += `Profit Targets:<br>${tradingPlan.profit_targets.substring(0, 100)}${tradingPlan.profit_targets.length > 100 ? '...' : ''}<br><br>`;
+    }
+    if (tradingPlan.stop_loss_rules) {
+        tooltipText += `Stop Loss Rules:<br>${tradingPlan.stop_loss_rules.substring(0, 100)}${tradingPlan.stop_loss_rules.length > 100 ? '...' : ''}<br><br>`;
+    }
+    if (tradingPlan.emotional_rules) {
+        tooltipText += `Emotional Rules:<br>${tradingPlan.emotional_rules.substring(0, 100)}${tradingPlan.emotional_rules.length > 100 ? '...' : ''}`;
+    }
+
+    if (tooltipText === 'Trading Plan Rules:<br><br>') {
+        tooltipText = 'No trading plan defined yet.<br>Go to Trading Plan tab to create your plan.';
+    }
+
+    tooltip.innerHTML = tooltipText;
 }
 function showAddAccountForm() {
     const form = document.getElementById('add-account-form');
@@ -2249,6 +2587,8 @@ window.deleteTrade = deleteTrade;
 window.openPhotoModal = openPhotoModal;
 window.closePhotoModal = closePhotoModal;
 window.removePhoto = removePhoto;
+window.saveTradingPlan = saveTradingPlan;
+window.clearTradingPlan = clearTradingPlan;
 
 // DOM ready event
 document.addEventListener('DOMContentLoaded', () => {
