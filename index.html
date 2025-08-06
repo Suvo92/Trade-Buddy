@@ -557,6 +557,143 @@
             white-space: nowrap;
         }
 
+        .photo-upload-section {
+            background: #f8f9fa;
+            border: 2px dashed #dee2e6;
+            border-radius: 10px;
+            padding: 20px;
+            text-align: center;
+            margin: 20px 0;
+            transition: all 0.3s ease;
+        }
+
+        .photo-upload-section:hover {
+            border-color: #007bff;
+            background: rgba(0, 123, 255, 0.05);
+        }
+
+        .photo-upload-section.dragover {
+            border-color: #007bff;
+            background: rgba(0, 123, 255, 0.1);
+        }
+
+        .photo-input {
+            display: none;
+        }
+
+        .photo-upload-btn {
+            background: #007bff;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            margin: 10px;
+        }
+
+        .photo-preview {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .photo-item {
+            position: relative;
+            width: 100px;
+            height: 100px;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .photo-item img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            cursor: pointer;
+        }
+
+        .photo-item .remove-photo {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            background: rgba(220, 53, 69, 0.9);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            font-size: 12px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .photo-modal {
+            display: none;
+            position: fixed;
+            z-index: 1100;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.8);
+            animation: fadeIn 0.3s ease;
+        }
+
+        .photo-modal-content {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            max-width: 95%;
+            max-height: 95%;
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+        }
+
+        .photo-modal img {
+            width: 100%;
+            height: auto;
+            max-height: 80vh;
+            object-fit: contain;
+            border-radius: 10px;
+        }
+
+        .photo-modal .close {
+            position: absolute;
+            top: 15px;
+            right: 25px;
+            color: white;
+            font-size: 35px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .trade-photos {
+            display: flex;
+            gap: 5px;
+            max-width: 150px;
+        }
+
+        .trade-photos img {
+            width: 30px;
+            height: 30px;
+            object-fit: cover;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .trade-photos img:hover {
+            transform: scale(1.2);
+        }
+
         @media (max-width: 768px) {
             body {
                 padding: 10px;
@@ -829,6 +966,20 @@
                         <textarea id="lessons" placeholder="What did you learn from this trade? What would you do differently? What went well?"></textarea>
                     </div>
 
+                    <!-- Photo Upload Section -->
+                    <div class="photo-upload-section" id="photo-drop-zone">
+                        <h4>📸 Trade Photos</h4>
+                        <p>Add charts, screenshots, or any visual documentation</p>
+                        <input type="file" id="photo-input" class="photo-input" multiple accept="image/*">
+                        <button type="button" class="photo-upload-btn" onclick="document.getElementById('photo-input').click()">
+                            📎 Choose Photos
+                        </button>
+                        <p style="margin-top: 10px; font-size: 12px; color: #6c757d;">
+                            Or drag and drop photos here
+                        </p>
+                        <div class="photo-preview" id="photo-preview"></div>
+                    </div>
+
                     <button type="submit" class="btn btn-primary">💾 Save Trade</button>
                     <button type="reset" class="btn btn-secondary">🔄 Clear Form</button>
                 </form>
@@ -928,6 +1079,14 @@
         </div>
     </div>
 
+    <!-- Photo Modal -->
+    <div id="photo-modal" class="photo-modal">
+        <span class="close" onclick="closePhotoModal()">&times;</span>
+        <div class="photo-modal-content">
+            <img id="modal-photo" src="" alt="Trade Photo">
+        </div>
+    </div>
+
 <script>
 // Debug logging
 let debugLog = [];
@@ -956,6 +1115,7 @@ let isSignUp = false;
 let trades = [];
 let accounts = [];
 let syncStatus = 'synced';
+let currentPhotos = [];
 
 debug('✅ Variables initialized');
 
@@ -1244,6 +1404,8 @@ function setupMainApp() {
         dashboardAccountSelector.addEventListener('change', updateDashboard);
     }
     
+    setupPhotoUpload();
+    
     debug('✅ Main app setup complete');
 }
 
@@ -1510,6 +1672,7 @@ async function saveTrade(e) {
             setup_description: document.getElementById('setup-description').value,
             emotions: document.getElementById('emotions').value,
             lessons: document.getElementById('lessons').value,
+            photos: [...currentPhotos],
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString()
         };
@@ -1645,6 +1808,8 @@ async function saveTrade(e) {
         
         // Reset form
         document.getElementById('trade-form').reset();
+        currentPhotos = [];
+        updatePhotoPreview();
         
         const now = new Date();
         now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
@@ -1695,6 +1860,7 @@ function updateTradesDisplay() {
                     <th>%</th>
                     <th>Status</th>
                     <th>Strategy</th>
+                    <th>Photos</th>
                     <th>Actions</th>
                 </tr>
             </thead>
@@ -1708,6 +1874,7 @@ function updateTradesDisplay() {
                     const pnlPercent = trade.pnl_percent || trade.pnlPercent || 0;
                     const commission = trade.commission || 0;
                     const swap = trade.swap || 0;
+                    const photos = trade.photos || [];
                     
                     return `
                         <tr>
@@ -1731,6 +1898,15 @@ function updateTradesDisplay() {
                             </td>
                             <td>${trade.status || (exitPrice ? 'Closed' : 'Open')}</td>
                             <td>${trade.strategy || '-'}</td>
+                            <td>
+                                <div class="trade-photos">
+                                    ${photos.slice(0, 3).map(photo => 
+                                        `<img src="${photo.data}" alt="${photo.name}" onclick="openPhotoModal('${photo.data}')">`
+                                    ).join('')}
+                                    ${photos.length > 3 ? `<span style="font-size: 10px;">+${photos.length - 3}</span>` : ''}
+                                    ${photos.length === 0 ? '<span style="color: #adb5bd; font-size: 12px;">-</span>' : ''}
+                                </div>
+                            </td>
                             <td>
                                 <button class="btn btn-danger btn-small" onclick="deleteTrade(${trade.id})">Delete</button>
                             </td>
@@ -1807,7 +1983,96 @@ function updateAccountDropdown() {
     }
 }
 
-// Account management functions
+// Photo upload functionality
+function setupPhotoUpload() {
+    const photoInput = document.getElementById('photo-input');
+    const dropZone = document.getElementById('photo-drop-zone');
+
+    if (photoInput) {
+        photoInput.addEventListener('change', handleFileSelect);
+    }
+
+    if (dropZone) {
+        dropZone.addEventListener('dragover', function(e) {
+            e.preventDefault();
+            dropZone.classList.add('dragover');
+        });
+
+        dropZone.addEventListener('dragleave', function(e) {
+            e.preventDefault();
+            dropZone.classList.remove('dragover');
+        });
+
+        dropZone.addEventListener('drop', function(e) {
+            e.preventDefault();
+            dropZone.classList.remove('dragover');
+            const files = e.dataTransfer.files;
+            handleFiles(files);
+        });
+    }
+}
+
+function handleFileSelect(e) {
+    handleFiles(e.target.files);
+}
+
+function handleFiles(files) {
+    for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        if (file.type.startsWith('image/')) {
+            if (file.size > 5 * 1024 * 1024) {
+                showNotification('Photo ' + file.name + ' is too large (max 5MB)', 'error');
+                continue;
+            }
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const photoData = {
+                    id: Date.now() + Math.random(),
+                    name: file.name,
+                    data: e.target.result,
+                    timestamp: new Date().toISOString()
+                };
+                currentPhotos.push(photoData);
+                updatePhotoPreview();
+            };
+            reader.readAsDataURL(file);
+        } else {
+            showNotification('File ' + file.name + ' is not an image', 'error');
+        }
+    }
+}
+
+function updatePhotoPreview() {
+    const preview = document.getElementById('photo-preview');
+    if (!preview) return;
+    
+    preview.innerHTML = '';
+    
+    currentPhotos.forEach(photo => {
+        const photoItem = document.createElement('div');
+        photoItem.className = 'photo-item';
+        photoItem.innerHTML = `
+            <img src="${photo.data}" alt="${photo.name}" onclick="openPhotoModal('${photo.data}')">
+            <button class="remove-photo" onclick="removePhoto('${photo.id}')" title="Remove photo">×</button>
+        `;
+        preview.appendChild(photoItem);
+    });
+}
+
+function openPhotoModal(imageSrc) {
+    document.getElementById('modal-photo').src = imageSrc;
+    document.getElementById('photo-modal').style.display = 'block';
+}
+
+function closePhotoModal() {
+    document.getElementById('photo-modal').style.display = 'none';
+}
+
+function removePhoto(photoId) {
+    currentPhotos = currentPhotos.filter(photo => photo.id != photoId);
+    updatePhotoPreview();
+}
 function showAddAccountForm() {
     const form = document.getElementById('add-account-form');
     if (form) form.style.display = 'block';
@@ -1981,6 +2246,9 @@ window.cancelAddAccount = cancelAddAccount;
 window.addAccount = addAccount;
 window.deleteAccount = deleteAccount;
 window.deleteTrade = deleteTrade;
+window.openPhotoModal = openPhotoModal;
+window.closePhotoModal = closePhotoModal;
+window.removePhoto = removePhoto;
 
 // DOM ready event
 document.addEventListener('DOMContentLoaded', () => {
