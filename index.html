@@ -1716,7 +1716,7 @@ async function initSupabase() {
     
     if (typeof window.supabase === 'undefined') {
         debug('❌ Supabase library not found');
-        showNotification('Supabase library failed to load', 'error');
+        showNotification('Supabase library failed to load. Please refresh the page.', 'error');
         return false;
     }
     
@@ -1726,14 +1726,14 @@ async function initSupabase() {
         supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
         debug('✅ Supabase client created');
         
+        // Test connection
         const { data, error } = await supabaseClient.auth.getSession();
         if (error) {
             debug(`❌ Connection test failed: ${error.message}`);
             showNotification(`Connection error: ${error.message}`, 'error');
-            return false;
+        } else {
+            debug('✅ Supabase connection successful');
         }
-        
-        debug('✅ Supabase connection successful');
         
         if (data.session) {
             debug(`👤 Found existing session: ${data.session.user.email}`);
@@ -1741,14 +1741,15 @@ async function initSupabase() {
             showMainApp();
             return true;
         } else {
-            debug('👤 No existing session');
+            debug('👤 No existing session - showing auth screen');
             showAuthScreen();
             return true;
         }
         
     } catch (error) {
         debug(`❌ Supabase initialization error: ${error.message}`);
-        showNotification(`Initialization error: ${error.message}`, 'error');
+        console.error('Supabase error:', error);
+        showNotification(`Connection failed: ${error.message}. Please check your internet connection and refresh.`, 'error');
         return false;
     }
 }
@@ -1765,17 +1766,34 @@ function setupAuth() {
     
     if (!authForm || !emailInput || !passwordInput || !submitBtn || !toggleLink) {
         debug('❌ Missing auth form elements');
+        showNotification('Authentication form elements missing', 'error');
         return false;
     }
     
     debug('✅ Auth form elements found');
     
+    // Add click event listener as backup
+    submitBtn.addEventListener('click', async (e) => {
+        if (e.target.type === 'submit') {
+            e.preventDefault();
+            await handleAuth();
+        }
+    });
+    
     authForm.addEventListener('submit', async (e) => {
         e.preventDefault();
-        debug('📝 Auth form submitted');
+        await handleAuth();
+    });
+    
+    async function handleAuth() {
+        debug('📝 Auth function called');
+        showNotification('Attempting authentication...', 'info');
         
         const email = emailInput.value.trim();
         const password = passwordInput.value;
+        
+        debug(`📧 Email: ${email ? 'provided' : 'missing'}`);
+        debug(`🔒 Password: ${password ? 'provided' : 'missing'}`);
         
         if (!email || !password) {
             showNotification('Please fill in all fields', 'error');
@@ -1783,9 +1801,12 @@ function setupAuth() {
         }
         
         if (!supabaseClient) {
+            debug('❌ Supabase client not ready');
             showNotification('Authentication service not ready', 'error');
             return;
         }
+        
+        debug('🔗 Supabase client ready');
         
         const originalText = submitBtn.textContent;
         submitBtn.disabled = true;
@@ -1796,6 +1817,7 @@ function setupAuth() {
             
             let result;
             if (isSignUp) {
+                debug('📝 Calling signUp...');
                 result = await supabaseClient.auth.signUp({ 
                     email, 
                     password,
@@ -1803,6 +1825,7 @@ function setupAuth() {
                         emailRedirectTo: window.location.origin
                     }
                 });
+                debug(`📝 SignUp result: ${JSON.stringify(result, null, 2)}`);
                 
                 if (result.data?.user && !result.data.session) {
                     showNotification('Please check your email for confirmation link', 'info');
@@ -1811,29 +1834,38 @@ function setupAuth() {
                     return;
                 }
             } else {
+                debug('🔐 Calling signInWithPassword...');
                 result = await supabaseClient.auth.signInWithPassword({ email, password });
+                debug(`🔐 SignIn result: ${JSON.stringify(result, null, 2)}`);
             }
             
             if (result.error) {
+                debug(`❌ Auth error: ${result.error.message}`);
                 throw result.error;
             }
             
             if (result.data?.user && result.data?.session) {
-                debug('✅ Authentication successful');
+                debug('✅ Authentication successful - has user and session');
                 user = result.data.user;
                 showMainApp();
-            } else if (isSignUp) {
+                showNotification('Login successful!', 'success');
+            } else if (result.data?.user && isSignUp) {
+                debug('📧 SignUp successful - waiting for email confirmation');
                 showNotification('Account created! Please check your email for confirmation.', 'success');
+            } else {
+                debug('❓ Unexpected auth result - no user or session');
+                showNotification('Authentication failed - please try again', 'error');
             }
             
         } catch (error) {
             debug(`💥 Auth failed: ${error.message}`);
-            showNotification(error.message, 'error');
+            console.error('Authentication error:', error);
+            showNotification(`Authentication failed: ${error.message}`, 'error');
         } finally {
             submitBtn.disabled = false;
             submitBtn.textContent = originalText;
         }
-    });
+    }
     
     toggleLink.addEventListener('click', (e) => {
         e.preventDefault();
@@ -1852,6 +1884,8 @@ function setupAuth() {
         if (newToggleLink) {
             newToggleLink.addEventListener('click', arguments.callee);
         }
+        
+        debug(`🔄 Switched to ${isSignUp ? 'sign up' : 'sign in'} mode`);
     });
     
     debug('✅ Authentication setup complete');
