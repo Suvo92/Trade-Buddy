@@ -514,6 +514,50 @@
             display: flex;
             gap: 5px;
         }
+
+        .plan-indicator {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .plan-followed {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .plan-not-followed {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .search-filter {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            align-items: center;
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            border: 1px solid #e9ecef;
+        }
+
+        .search-filter input, .search-filter select {
+            flex: 1;
+            min-width: 150px;
+            margin: 0;
+        }
+
+        .search-filter .btn {
+            margin: 0;
+            white-space: nowrap;
+        }
+
+        @media (max-width: 768px) {
             body {
                 padding: 10px;
             }
@@ -600,6 +644,20 @@
         <!-- Dashboard Tab -->
         <div id="dashboard" class="tab-content active">
             <div class="dashboard-grid">
+                <!-- Account Balance -->
+                <div class="dashboard-card">
+                    <h4>💰 Account Balance</h4>
+                    <div style="margin-bottom: 15px;">
+                        <select id="dashboard-account-selector">
+                            <option value="">All Accounts</option>
+                        </select>
+                    </div>
+                    <div style="text-align: center; padding: 20px 0;">
+                        <div style="font-size: 2.5em; font-weight: 700; margin-bottom: 10px;" id="dashboard-balance">$0.00</div>
+                        <div style="font-size: 1.1em; opacity: 0.9;" id="dashboard-balance-change">No trades yet</div>
+                    </div>
+                </div>
+
                 <!-- Quick Stats -->
                 <div class="dashboard-card">
                     <h4>📊 Quick Stats</h4>
@@ -620,6 +678,20 @@
                             <div class="quick-stat-value" id="dash-profit-factor">0</div>
                             <div class="quick-stat-label">Profit Factor</div>
                         </div>
+                        <div class="quick-stat">
+                            <div class="quick-stat-value" id="dash-avg-rrr">N/A</div>
+                            <div class="quick-stat-label">Avg RRR</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Recent Trades -->
+                <div class="dashboard-card">
+                    <h4>🕒 Recent Trades</h4>
+                    <div style="max-height: 300px; overflow-y: auto;" id="recent-trades-list">
+                        <div class="empty-state">
+                            <p>No recent trades</p>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -631,6 +703,12 @@
                 <h3>📝 New Trade Entry</h3>
                 <form id="trade-form">
                     <div class="form-grid">
+                        <div class="form-group">
+                            <label for="trade-account">Account *</label>
+                            <select id="trade-account" required>
+                                <option value="">Select Account</option>
+                            </select>
+                        </div>
                         <div class="form-group">
                             <label for="date">Date *</label>
                             <input type="datetime-local" id="date" required>
@@ -649,7 +727,11 @@
                         </div>
                         <div class="form-group">
                             <label for="quantity">Quantity *</label>
-                            <input type="number" id="quantity" step="0.01" placeholder="1.0" required>
+                            <input type="number" id="quantity" step="0.01" placeholder="1.0 (for 1 lot)" required>
+                            <small style="color: #6c757d; font-size: 12px;">
+                                For forex: enter lot size (e.g., 1.0 for 1 standard lot)<br>
+                                For stocks: enter number of shares
+                            </small>
                         </div>
                         <div class="form-group">
                             <label for="entry-price">Entry Price *</label>
@@ -659,6 +741,92 @@
                             <label for="exit-price">Exit Price</label>
                             <input type="number" id="exit-price" step="0.00001" placeholder="0.60450">
                         </div>
+                        <div class="form-group">
+                            <label for="manual-pnl">Manual P&L (Optional)</label>
+                            <input type="number" id="manual-pnl" step="0.01" placeholder="Enter actual P&L if known">
+                            <small style="color: #6c757d; font-size: 12px;">Leave blank for automatic calculation</small>
+                        </div>
+                        <div class="form-group">
+                            <label for="commission">Commission (Optional)</label>
+                            <input type="number" id="commission" step="0.01" placeholder="0.00">
+                            <small style="color: #6c757d; font-size: 12px;">Enter total commission/fees for this trade</small>
+                        </div>
+                        <div class="form-group">
+                            <label for="swap">Swap/Interest (Optional)</label>
+                            <input type="number" id="swap" step="0.01" placeholder="0.00">
+                            <small style="color: #6c757d; font-size: 12px;">Enter swap/rollover fees (negative for charges)</small>
+                        </div>
+                        <div class="form-group">
+                            <label for="stop-loss">Stop Loss</label>
+                            <input type="number" id="stop-loss" step="0.00001" placeholder="0.60200">
+                        </div>
+                        <div class="form-group">
+                            <label for="take-profit">Take Profit</label>
+                            <input type="number" id="take-profit" step="0.00001" placeholder="0.60500">
+                        </div>
+                        <div class="form-group">
+                            <label for="strategy">Strategy</label>
+                            <select id="strategy">
+                                <option value="">Select...</option>
+                                <option value="Breakout">Breakout</option>
+                                <option value="Reversal">Reversal</option>
+                                <option value="Trend Following">Trend Following</option>
+                                <option value="Scalping">Scalping</option>
+                                <option value="Swing Trading">Swing Trading</option>
+                                <option value="Day Trading">Day Trading</option>
+                                <option value="Options">Options</option>
+                                <option value="Futures">Futures</option>
+                                <option value="Forex">Forex</option>
+                                <option value="Other">Other</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="market-condition">Market Condition</label>
+                            <select id="market-condition">
+                                <option value="">Select...</option>
+                                <option value="Trending Up">Trending Up</option>
+                                <option value="Trending Down">Trending Down</option>
+                                <option value="Ranging">Ranging</option>
+                                <option value="Volatile">Volatile</option>
+                                <option value="Low Volume">Low Volume</option>
+                                <option value="High Volume">High Volume</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="risk-rating">Risk Rating</label>
+                            <select id="risk-rating">
+                                <option value="">Select...</option>
+                                <option value="Low">Low (1-2%)</option>
+                                <option value="Medium">Medium (2-3%)</option>
+                                <option value="High">High (3%+)</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="confidence">Confidence Level</label>
+                            <select id="confidence">
+                                <option value="">Select...</option>
+                                <option value="Very Low">Very Low (1-2)</option>
+                                <option value="Low">Low (3-4)</option>
+                                <option value="Medium">Medium (5-6)</option>
+                                <option value="High">High (7-8)</option>
+                                <option value="Very High">Very High (9-10)</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="setup-description">Setup Description</label>
+                        <textarea id="setup-description" placeholder="Describe your trade setup, technical analysis, entry/exit criteria, and reasoning..."></textarea>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="emotions">Emotions & Psychology</label>
+                        <textarea id="emotions" placeholder="How did you feel before/during/after the trade? Any emotional challenges? FOMO, fear, greed, etc."></textarea>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="lessons">Lessons Learned</label>
+                        <textarea id="lessons" placeholder="What did you learn from this trade? What would you do differently? What went well?"></textarea>
                     </div>
 
                     <button type="submit" class="btn btn-primary">💾 Save Trade</button>
@@ -1070,6 +1238,12 @@ function setupMainApp() {
         });
     }
     
+    // Dashboard account selector
+    const dashboardAccountSelector = document.getElementById('dashboard-account-selector');
+    if (dashboardAccountSelector) {
+        dashboardAccountSelector.addEventListener('change', updateDashboard);
+    }
+    
     debug('✅ Main app setup complete');
 }
 
@@ -1183,26 +1357,75 @@ async function loadData() {
 function updateDashboard() {
     debug('📊 Updating dashboard...');
     
-    // Update quick stats
-    const closedTrades = trades.filter(t => t.exit_price || t.exitPrice);
-    const winningTrades = closedTrades.filter(t => (t.pnl || 0) > 0);
+    const selectedAccountId = document.getElementById('dashboard-account-selector')?.value;
+    let filteredTrades = trades;
+    let selectedAccount = null;
 
-    const totalTrades = trades.length;
+    if (selectedAccountId) {
+        filteredTrades = trades.filter(trade => (trade.account_id || trade.accountId) == selectedAccountId);
+        selectedAccount = accounts.find(acc => acc.id == selectedAccountId);
+    }
+
+    // Update account balance display
+    if (selectedAccount) {
+        const accountTrades = trades.filter(trade => (trade.account_id || trade.accountId) == selectedAccountId);
+        const closedTrades = accountTrades.filter(trade => trade.exit_price || trade.exitPrice);
+        const totalPnL = closedTrades.reduce((sum, trade) => sum + (trade.pnl || 0), 0);
+        const totalReturn = selectedAccount.starting_balance || selectedAccount.startingBalance > 0 ? 
+            (totalPnL / (selectedAccount.starting_balance || selectedAccount.startingBalance) * 100) : 0;
+        
+        document.getElementById('dashboard-balance').textContent = 
+            `${selectedAccount.currency} ${(selectedAccount.current_balance || selectedAccount.currentBalance || 0).toLocaleString()}`;
+        document.getElementById('dashboard-balance-change').textContent = 
+            `${totalReturn >= 0 ? '+' : ''}${totalReturn.toFixed(2)}% total return (${totalPnL >= 0 ? '+' : ''}${totalPnL.toFixed(2)})`;
+    } else {
+        // Show total portfolio value
+        const totalValue = accounts.reduce((sum, acc) => sum + (acc.current_balance || acc.currentBalance || 0), 0);
+        const totalStarting = accounts.reduce((sum, acc) => sum + (acc.starting_balance || acc.startingBalance || 0), 0);
+        const totalReturn = totalStarting > 0 ? ((totalValue - totalStarting) / totalStarting * 100) : 0;
+        
+        document.getElementById('dashboard-balance').textContent = `${totalValue.toLocaleString()}`;
+        document.getElementById('dashboard-balance-change').textContent = 
+            totalStarting > 0 ? `${totalReturn >= 0 ? '+' : ''}${totalReturn.toFixed(2)}% total return` : 'No accounts yet';
+    }
+
+    // Update quick stats
+    const closedTrades = filteredTrades.filter(t => t.exit_price || t.exitPrice);
+    const winningTrades = closedTrades.filter(t => (t.pnl || 0) > 0);
+    const losingTrades = closedTrades.filter(t => (t.pnl || 0) < 0);
+
+    const totalTrades = filteredTrades.length;
     const winRate = closedTrades.length > 0 ? (winningTrades.length / closedTrades.length * 100) : 0;
     const totalPnL = closedTrades.reduce((sum, t) => sum + (t.pnl || 0), 0);
 
     // Calculate profit factor
     const avgWin = winningTrades.length > 0 ? winningTrades.reduce((sum, t) => sum + (t.pnl || 0), 0) / winningTrades.length : 0;
-    const losingTrades = closedTrades.filter(t => (t.pnl || 0) < 0);
     const avgLoss = losingTrades.length > 0 ? Math.abs(losingTrades.reduce((sum, t) => sum + (t.pnl || 0), 0) / losingTrades.length) : 0;
     const profitFactor = avgLoss > 0 ? avgWin / avgLoss : 0;
+
+    // Calculate average RRR from trades with both stop loss and take profit
+    const tradesWithRRR = filteredTrades.filter(t => (t.stop_loss || t.stopLoss) && (t.take_profit || t.takeProfit) && (t.entry_price || t.entryPrice));
+    let avgRRR = 0;
+    
+    if (tradesWithRRR.length > 0) {
+        const totalRRR = tradesWithRRR.reduce((sum, trade) => {
+            const entryPrice = trade.entry_price || trade.entryPrice;
+            const stopLoss = trade.stop_loss || trade.stopLoss;
+            const takeProfit = trade.take_profit || trade.takeProfit;
+            const risk = Math.abs(entryPrice - stopLoss);
+            const reward = Math.abs(takeProfit - entryPrice);
+            return risk > 0 ? sum + (reward / risk) : sum;
+        }, 0);
+        avgRRR = totalRRR / tradesWithRRR.length;
+    }
 
     // Update dashboard elements if they exist
     const dashElements = {
         'dash-total-trades': totalTrades,
         'dash-win-rate': winRate.toFixed(1) + '%',
         'dash-total-pnl': totalPnL.toFixed(2),
-        'dash-profit-factor': profitFactor.toFixed(2)
+        'dash-profit-factor': profitFactor.toFixed(2),
+        'dash-avg-rrr': avgRRR > 0 ? `1:${avgRRR.toFixed(2)}` : 'N/A'
     };
 
     Object.entries(dashElements).forEach(([id, value]) => {
@@ -1211,6 +1434,45 @@ function updateDashboard() {
             element.textContent = value;
         }
     });
+
+    // Update recent trades
+    updateRecentTrades(filteredTrades);
+}
+
+function updateRecentTrades(filteredTrades) {
+    const container = document.getElementById('recent-trades-list');
+    if (!container) return;
+    
+    const recentTrades = filteredTrades.slice(0, 5);
+
+    if (recentTrades.length === 0) {
+        container.innerHTML = '<div class="empty-state"><p>No recent trades</p></div>';
+        return;
+    }
+
+    container.innerHTML = recentTrades.map(trade => {
+        const account = accounts.find(acc => acc.id === (trade.account_id || trade.accountId));
+        return `
+            <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px; border-bottom: 1px solid #e9ecef; transition: background 0.2s;">
+                <div>
+                    <div style="font-weight: 600; color: #2c3e50;">${trade.symbol}</div>
+                    <div style="font-size: 12px; color: #6c757d;">
+                        ${new Date(trade.date).toLocaleDateString()} • 
+                        <span style="font-size: 12px; padding: 2px 6px; border-radius: 4px; color: white; background: ${trade.side === 'Long' ? '#28a745' : '#dc3545'};">${trade.side}</span>
+                        ${account ? ` • ${account.name}` : ''}
+                    </div>
+                </div>
+                <div style="text-align: right;">
+                    <div class="${(trade.pnl || 0) >= 0 ? 'profit' : 'loss'}">
+                        ${(trade.pnl || 0) >= 0 ? '+' : ''}${(trade.pnl || 0).toFixed(2)}
+                    </div>
+                    <div style="font-size: 12px; color: #6c757d;">
+                        ${trade.status || (trade.exit_price || trade.exitPrice ? 'Closed' : 'Open')}
+                    </div>
+                </div>
+            </div>
+        `;
+    }).join('');
 }
 
 // Save trade function
@@ -1220,31 +1482,125 @@ async function saveTrade(e) {
     updateSyncStatus('syncing');
     
     try {
+        const accountId = document.getElementById('trade-account').value;
+        if (!accountId) {
+            showNotification('Please select an account', 'error');
+            updateSyncStatus('synced');
+            return;
+        }
+        
         const trade = {
             user_id: user.id,
+            account_id: parseInt(accountId),
             date: document.getElementById('date').value,
             symbol: document.getElementById('symbol').value.toUpperCase(),
             side: document.getElementById('side').value,
             quantity: parseFloat(document.getElementById('quantity').value),
             entry_price: parseFloat(document.getElementById('entry-price').value),
             exit_price: document.getElementById('exit-price').value ? parseFloat(document.getElementById('exit-price').value) : null,
+            manual_pnl: document.getElementById('manual-pnl').value ? parseFloat(document.getElementById('manual-pnl').value) : null,
+            commission: document.getElementById('commission').value ? parseFloat(document.getElementById('commission').value) : 0,
+            swap: document.getElementById('swap').value ? parseFloat(document.getElementById('swap').value) : 0,
+            stop_loss: document.getElementById('stop-loss').value ? parseFloat(document.getElementById('stop-loss').value) : null,
+            take_profit: document.getElementById('take-profit').value ? parseFloat(document.getElementById('take-profit').value) : null,
+            strategy: document.getElementById('strategy').value,
+            market_condition: document.getElementById('market-condition').value,
+            risk_rating: document.getElementById('risk-rating').value,
+            confidence: document.getElementById('confidence').value,
+            setup_description: document.getElementById('setup-description').value,
+            emotions: document.getElementById('emotions').value,
+            lessons: document.getElementById('lessons').value,
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString()
         };
 
         // Calculate P&L if exit price is provided
         if (trade.exit_price) {
-            let pnl = 0;
-            if (trade.side === 'Long') {
-                pnl = (trade.exit_price - trade.entry_price) * trade.quantity;
+            if (trade.manual_pnl !== null) {
+                // Use manual P&L if provided
+                trade.pnl = trade.manual_pnl;
             } else {
-                pnl = (trade.entry_price - trade.exit_price) * trade.quantity;
+                // Auto-calculate P&L
+                let pnl = 0;
+                
+                // Basic calculation for most instruments
+                if (trade.side === 'Long') {
+                    pnl = (trade.exit_price - trade.entry_price) * trade.quantity;
+                } else {
+                    pnl = (trade.entry_price - trade.exit_price) * trade.quantity;
+                }
+                
+                // Check if this might be a forex pair and apply basic scaling
+                const symbol = trade.symbol.toUpperCase();
+                const forexPairs = ['USD', 'EUR', 'GBP', 'JPY', 'AUD', 'NZD', 'CAD', 'CHF'];
+                const isLikelyForex = forexPairs.some(currency => symbol.includes(currency)) && symbol.length >= 6;
+                
+                if (isLikelyForex) {
+                    // For forex, assume standard lot calculation
+                    // This is a simplified calculation - users should use manual P&L for accuracy
+                    if (symbol.includes('JPY')) {
+                        // JPY pairs: multiply by 1000 (rough approximation)
+                        pnl = pnl * 1000;
+                    } else {
+                        // Other forex pairs: multiply by 100000 (standard lot)
+                        pnl = pnl * 100000;
+                    }
+                }
+                
+                trade.pnl = pnl;
             }
             
-            trade.pnl = pnl;
-            trade.status = pnl >= 0 ? 'Closed - Profit' : 'Closed - Loss';
+            // Subtract commission and swap from P&L
+            trade.gross_pnl = trade.pnl; // Store gross P&L before fees
+            trade.pnl = trade.pnl - (trade.commission || 0) - (trade.swap || 0);
+            
+            // Calculate percentage based on risk (if stop loss is set) or position value
+            if (trade.stop_loss) {
+                // Risk-based percentage: P&L / Risk Amount
+                const riskAmount = Math.abs(trade.entry_price - trade.stop_loss) * Math.abs(trade.quantity);
+                
+                // For forex, adjust the risk amount calculation
+                const symbol = trade.symbol.toUpperCase();
+                const forexPairs = ['USD', 'EUR', 'GBP', 'JPY', 'AUD', 'NZD', 'CAD', 'CHF'];
+                const isLikelyForex = forexPairs.some(currency => symbol.includes(currency)) && symbol.length >= 6;
+                
+                let adjustedRiskAmount = riskAmount;
+                if (isLikelyForex) {
+                    if (symbol.includes('JPY')) {
+                        adjustedRiskAmount = riskAmount * 1000;
+                    } else {
+                        adjustedRiskAmount = riskAmount * 100000;
+                    }
+                }
+                
+                trade.pnl_percent = adjustedRiskAmount > 0 ? (trade.pnl / adjustedRiskAmount) * 100 : 0;
+            } else {
+                // Fallback: Calculate as percentage of position value, but cap at reasonable limits
+                let positionValue = Math.abs(trade.entry_price * trade.quantity);
+                
+                // For forex, use the actual position value that was used for P&L calculation
+                const symbol = trade.symbol.toUpperCase();
+                const forexPairs = ['USD', 'EUR', 'GBP', 'JPY', 'AUD', 'NZD', 'CAD', 'CHF'];
+                const isLikelyForex = forexPairs.some(currency => symbol.includes(currency)) && symbol.length >= 6;
+                
+                if (isLikelyForex) {
+                    if (symbol.includes('JPY')) {
+                        positionValue = positionValue * 1000;
+                    } else {
+                        positionValue = positionValue * 100000;
+                    }
+                }
+                
+                const rawPercent = positionValue > 0 ? (trade.pnl / positionValue) * 100 : 0;
+                
+                // Cap percentage at reasonable limits (-1000% to +1000%)
+                trade.pnl_percent = Math.max(-1000, Math.min(1000, rawPercent));
+            }
+            
+            trade.status = trade.pnl >= 0 ? 'Closed - Profit' : 'Closed - Loss';
         } else {
             trade.pnl = 0;
+            trade.pnl_percent = 0;
             trade.status = 'Open';
         }
 
@@ -1260,8 +1616,32 @@ async function saveTrade(e) {
         // Update local data
         trades.unshift(data);
 
+        // Update account balance if closed trade
+        if (trade.exit_price) {
+            const account = accounts.find(acc => acc.id === trade.account_id);
+            if (account) {
+                const newBalance = (account.current_balance || 0) + trade.pnl;
+                
+                // Update account in Supabase
+                const { error: accountError } = await supabaseClient
+                    .from('accounts')
+                    .update({ 
+                        current_balance: newBalance,
+                        updated_at: new Date().toISOString()
+                    })
+                    .eq('id', trade.account_id)
+                    .eq('user_id', user.id);
+                    
+                if (!accountError) {
+                    account.current_balance = newBalance;
+                }
+            }
+        }
+
         // Update UI
         updateDashboard();
+        updateTradesDisplay();
+        updateAccountList();
         
         // Reset form
         document.getElementById('trade-form').reset();
@@ -1302,34 +1682,55 @@ function updateTradesDisplay() {
             <thead>
                 <tr>
                     <th>Date</th>
+                    <th>Account</th>
                     <th>Symbol</th>
                     <th>Side</th>
                     <th>Qty</th>
                     <th>Entry</th>
                     <th>Exit</th>
-                    <th>P&L</th>
+                    <th>Gross P&L</th>
+                    <th>Comm</th>
+                    <th>Swap</th>
+                    <th>Net P&L</th>
+                    <th>%</th>
                     <th>Status</th>
+                    <th>Strategy</th>
                     <th>Actions</th>
                 </tr>
             </thead>
             <tbody>
                 ${trades.map(trade => {
+                    const account = accounts.find(acc => acc.id === (trade.account_id || trade.accountId));
                     const entryPrice = trade.entry_price || trade.entryPrice || 0;
                     const exitPrice = trade.exit_price || trade.exitPrice;
                     const pnl = trade.pnl || 0;
+                    const grossPnl = trade.gross_pnl || pnl;
+                    const pnlPercent = trade.pnl_percent || trade.pnlPercent || 0;
+                    const commission = trade.commission || 0;
+                    const swap = trade.swap || 0;
                     
                     return `
                         <tr>
                             <td>${new Date(trade.date).toLocaleDateString()}</td>
+                            <td>${account ? account.name : 'Unknown'}</td>
                             <td><strong>${trade.symbol}</strong></td>
                             <td>${trade.side}</td>
                             <td>${trade.quantity}</td>
                             <td>${entryPrice.toFixed(5)}</td>
                             <td>${exitPrice ? exitPrice.toFixed(5) : '-'}</td>
+                            <td class="${grossPnl >= 0 ? 'profit' : 'loss'}">
+                                ${grossPnl >= 0 ? '+' : ''}${grossPnl.toFixed(2)}
+                            </td>
+                            <td>${commission ? '-' + commission.toFixed(2) : '-'}</td>
+                            <td>${swap ? (swap >= 0 ? '+' : '') + swap.toFixed(2) : '-'}</td>
                             <td class="${pnl >= 0 ? 'profit' : 'loss'}">
                                 ${pnl >= 0 ? '+' : ''}${pnl.toFixed(2)}
                             </td>
+                            <td class="${pnlPercent >= 0 ? 'profit' : 'loss'}">
+                                ${pnlPercent >= 0 ? '+' : ''}${pnlPercent.toFixed(2)}%
+                            </td>
                             <td>${trade.status || (exitPrice ? 'Closed' : 'Open')}</td>
+                            <td>${trade.strategy || '-'}</td>
                             <td>
                                 <button class="btn btn-danger btn-small" onclick="deleteTrade(${trade.id})">Delete</button>
                             </td>
@@ -1381,6 +1782,29 @@ function updateAccountList() {
             </div>
         `;
     }).join('');
+    
+    // Update account dropdown in trade form
+    updateAccountDropdown();
+}
+
+// Update account dropdown
+function updateAccountDropdown() {
+    const tradeAccountSelect = document.getElementById('trade-account');
+    const dashboardAccountSelect = document.getElementById('dashboard-account-selector');
+    
+    if (tradeAccountSelect) {
+        const currentTradeValue = tradeAccountSelect.value;
+        tradeAccountSelect.innerHTML = '<option value="">Select Account</option>' + 
+            accounts.map(account => `<option value="${account.id}">${account.name} (${account.currency})</option>`).join('');
+        tradeAccountSelect.value = currentTradeValue;
+    }
+
+    if (dashboardAccountSelect) {
+        const currentDashboardValue = dashboardAccountSelect.value;
+        dashboardAccountSelect.innerHTML = '<option value="">All Accounts</option>' + 
+            accounts.map(account => `<option value="${account.id}">${account.name}</option>`).join('');
+        dashboardAccountSelect.value = currentDashboardValue;
+    }
 }
 
 // Account management functions
@@ -1499,6 +1923,30 @@ async function deleteTrade(id) {
         updateSyncStatus('syncing');
         
         try {
+            const trade = trades.find(t => t.id === id);
+            
+            // If trade was closed, reverse the P&L from account balance
+            if (trade && (trade.exit_price || trade.exitPrice) && (trade.account_id || trade.accountId)) {
+                const account = accounts.find(acc => acc.id === (trade.account_id || trade.accountId));
+                if (account) {
+                    const newBalance = (account.current_balance || account.currentBalance || 0) - (trade.pnl || 0);
+                    
+                    // Update account in Supabase
+                    const { error: accountError } = await supabaseClient
+                        .from('accounts')
+                        .update({ 
+                            current_balance: newBalance,
+                            updated_at: new Date().toISOString()
+                        })
+                        .eq('id', account.id)
+                        .eq('user_id', user.id);
+                        
+                    if (!accountError) {
+                        account.current_balance = newBalance;
+                    }
+                }
+            }
+            
             // Delete from Supabase
             const { error } = await supabaseClient
                 .from('trades')
@@ -1514,6 +1962,7 @@ async function deleteTrade(id) {
             // Update UI
             updateTradesDisplay();
             updateDashboard();
+            updateAccountList();
             
             updateSyncStatus('synced');
             showNotification('Trade deleted successfully', 'success');
@@ -1532,6 +1981,8 @@ window.cancelAddAccount = cancelAddAccount;
 window.addAccount = addAccount;
 window.deleteAccount = deleteAccount;
 window.deleteTrade = deleteTrade;
+
+// DOM ready event
 document.addEventListener('DOMContentLoaded', () => {
     debug('📄 DOM Content Loaded');
     setTimeout(() => {
@@ -1551,7 +2002,7 @@ if (document.readyState === 'loading') {
     }, 100);
 }
 
-debug('📜 Trade Buddy script setup complete');
+debug('📜 Enhanced Trade Buddy script setup complete');
 </script>
 </body>
 </html>
