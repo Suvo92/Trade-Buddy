@@ -1796,7 +1796,20 @@ function setupAuth() {
             
             let result;
             if (isSignUp) {
-                result = await supabaseClient.auth.signUp({ email, password });
+                result = await supabaseClient.auth.signUp({ 
+                    email, 
+                    password,
+                    options: {
+                        emailRedirectTo: window.location.origin
+                    }
+                });
+                
+                if (result.data?.user && !result.data.session) {
+                    showNotification('Please check your email for confirmation link', 'info');
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = originalText;
+                    return;
+                }
             } else {
                 result = await supabaseClient.auth.signInWithPassword({ email, password });
             }
@@ -1805,10 +1818,12 @@ function setupAuth() {
                 throw result.error;
             }
             
-            if (result.data?.user) {
+            if (result.data?.user && result.data?.session) {
                 debug('✅ Authentication successful');
                 user = result.data.user;
                 showMainApp();
+            } else if (isSignUp) {
+                showNotification('Account created! Please check your email for confirmation.', 'success');
             }
             
         } catch (error) {
