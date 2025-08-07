@@ -1405,10 +1405,23 @@ debug('📜 Script loaded');
             display: none;
             padding: 30px;
             animation: fadeIn 0.3s ease;
+            position: relative;
+            z-index: 1;
         }
 
         .tab-content.active {
             display: block;
+        }
+
+        .tab-content:not(.active) {
+            display: none !important;
+            visibility: hidden !important;
+            opacity: 0 !important;
+            height: 0 !important;
+            overflow: hidden !important;
+            position: absolute !important;
+            left: -99999px !important;
+            top: -99999px !important;
         }
 
         @keyframes fadeIn {
@@ -1735,6 +1748,8 @@ debug('📜 Script loaded');
             margin-bottom: 20px;
             flex-wrap: wrap;
             gap: 10px;
+            position: relative;
+            z-index: 2;
         }
 
         .calendar-grid {
@@ -1746,6 +1761,8 @@ debug('📜 Script loaded');
             overflow: hidden;
             box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
             margin-bottom: 20px;
+            position: relative;
+            z-index: 2;
         }
 
         .calendar-header {
@@ -1840,6 +1857,14 @@ debug('📜 Script loaded');
             padding: 20px;
             border-radius: 10px;
             box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+            position: relative;
+            z-index: 2;
+        }
+
+        #calendar-container {
+            position: relative;
+            z-index: 2;
+            overflow: hidden;
         }
 
         .calendar-summary-item {
