@@ -704,6 +704,14 @@ function setupYearSelector() {
 
 function updateCalendar() {
     debug('📅 Updating calendar...');
+    
+    // Make sure we're updating the calendar within the correct tab
+    const calendarTab = document.getElementById('calendar');
+    if (!calendarTab) {
+        debug('❌ Calendar tab not found');
+        return;
+    }
+    
     const year = currentCalendarDate.getFullYear();
     const month = currentCalendarDate.getMonth();
     
@@ -801,12 +809,16 @@ function updateCalendar() {
         currentDate.setDate(currentDate.getDate() + 1);
     }
 
-    const calendarGrid = document.getElementById('calendar-grid');
+    // CRITICAL: Only update if the calendar grid exists and is within the calendar tab
+    const calendarGrid = document.querySelector('#calendar #calendar-grid');
     if (calendarGrid) {
         calendarGrid.innerHTML = calendarHTML;
+        debug('✅ Calendar grid updated within tab');
+    } else {
+        debug('❌ Calendar grid not found within calendar tab');
     }
     
-    // Update monthly summary
+    // Update monthly summary - also ensure it's within the calendar tab
     updateMonthlySummary(year, month);
 }
 
@@ -868,9 +880,13 @@ function updateMonthlySummary(year, month) {
         </div>
     `;
 
-    const calendarSummary = document.getElementById('calendar-summary');
+    // CRITICAL: Only update if the calendar summary exists within the calendar tab
+    const calendarSummary = document.querySelector('#calendar #calendar-summary');
     if (calendarSummary) {
         calendarSummary.innerHTML = summaryHTML;
+        debug('✅ Calendar summary updated within tab');
+    } else {
+        debug('❌ Calendar summary not found within calendar tab');
     }
 }
 
