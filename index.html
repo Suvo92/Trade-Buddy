@@ -399,26 +399,39 @@ async function loadData() {
 function showTab(tabId) {
     debug(`🔄 Tab: ${tabId}`);
     
+    // Hide all tab contents first
     document.querySelectorAll('.tab-content').forEach(tab => {
         tab.classList.remove('active');
+        tab.style.display = 'none';
     });
     
+    // Remove active class from all nav tabs
     document.querySelectorAll('.nav-tab').forEach(tab => {
         tab.classList.remove('active');
     });
     
+    // Show the selected tab
     const activeTab = document.getElementById(tabId);
     const activeNavTab = document.querySelector(`[data-tab="${tabId}"]`);
     
     if (activeTab && activeNavTab) {
+        activeTab.style.display = 'block';
         activeTab.classList.add('active');
         activeNavTab.classList.add('active');
         
+        // Update content based on tab
         if (tabId === 'dashboard') {
             updateDashboard();
         } else if (tabId === 'statistics') {
             updateStatistics();
         } else if (tabId === 'calendar') {
+            // Force calendar container to be visible and properly positioned
+            const calendarContainer = document.getElementById('calendar-container');
+            if (calendarContainer) {
+                calendarContainer.style.display = 'block';
+                calendarContainer.style.position = 'relative';
+                calendarContainer.style.zIndex = '1';
+            }
             updateCalendar();
         }
     }
@@ -1199,6 +1212,8 @@ debug('📜 Script loaded');
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
             padding: 20px;
+            position: relative;
+            overflow-x: hidden;
         }
 
         .debug-panel {
@@ -1214,7 +1229,7 @@ debug('📜 Script loaded');
             max-width: 250px;
             max-height: 120px;
             overflow-y: auto;
-            z-index: 9999;
+            z-index: 10000;
             opacity: 0.7;
         }
 
@@ -1294,6 +1309,8 @@ debug('📜 Script loaded');
             box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
             overflow: hidden;
             display: none;
+            position: relative;
+            z-index: 1;
         }
 
         .header {
@@ -1740,7 +1757,34 @@ debug('📜 Script loaded');
             font-weight: 500;
         }
 
-        /* Calendar specific styles */
+        /* Calendar Tab - Completely isolated */
+        #calendar.tab-content {
+            display: none !important;
+            padding: 30px;
+            position: relative;
+            z-index: 1;
+            overflow: hidden;
+            width: 100%;
+            height: auto;
+            max-height: none;
+        }
+
+        #calendar.tab-content.active {
+            display: block !important;
+            position: static;
+        }
+
+        #calendar .form-section {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 25px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
+            border: 1px solid #e9ecef;
+            position: relative;
+            z-index: 1;
+            overflow: hidden;
+        }
         .calendar-controls {
             display: flex;
             align-items: center;
