@@ -2232,7 +2232,369 @@ function updateMonthlySummary(year, month) {
 // Load data function
 async function loadData() {
     debug('📊 Loading user data...');
-    updateSyncStatus('synced';
+    updateSyncStatus('syncing');
+    
+    try {
+        // Load trades
+        try {
+            const { data: tradesData, error: tradesError } = await supabaseClient
+                .from('trades')
+                .select('*')
+                .eq('user_id', user.id)
+                .order('date', { ascending: false });
+                
+            if (tradesError) {
+                console.log('Trades load error:', tradesError);
+                trades = [];
+            } else {
+                trades = tradesData || [];
+            }
+        } catch (e) {
+            console.log('Trades table might not exist yet');
+            trades = [];
+        }
+        
+        // Load accounts
+        try {
+            const { data: accountsData, error: accountsError } = await supabaseClient
+                .from('accounts')
+                .select('*')
+                .eq('user_id', user.id);
+                
+            if (accountsError) {
+                console.log('Accounts load error:', accountsError);
+                accounts = [];
+            } else {
+                accounts = accountsData || [];
+            }
+        } catch (e) {
+            console.log('Accounts table might not exist yet');
+            accounts = [];
+        }
+        
+        // Load trading plan
+        try {
+            const { data: planData, error: planError } = await supabaseClient
+                .from('trading_plans')
+                .select('*')
+                .eq('user_id', user.id)
+                .single();
+                
+            if (planError) {
+                if (planError.code !== 'PGRST116' && planError.code !== 'PGRST103') {
+                    console.log('Trading plan load error:', planError);
+                }
+                tradingPlan = {};
+            } else {
+                tradingPlan = planData || {};
+            }
+        } catch (e) {
+            console.log('Trading plan table might not exist yet');
+            tradingPlan = {};
+        }
+        
+        debug(`✅ Loaded: ${trades.length} trades, ${accounts.length} accounts, trading plan: ${Object.keys(tradingPlan).length > 0 ? 'Yes' : 'No'}`);
+        
+        // Update UI
+        setTimeout(() => {
+            updateDashboard();
+            updateTradesDisplay();
+            updateAccountList();
+            updateTradingPlanForm();
+            updateTradingPlanTooltip();
+            updateStatistics();
+            updateCalendar();
+            setupYearSelector();
+        }, 100);
+        
+        updateSyncStatus('synced');
+        debug('✅ Data loaded successfully');
+    } catch (error) {
+        debug(`❌ Error loading data: ${error.message}`);
+        updateSyncStatus('error');
+        showNotification('Error loading data', 'error');
+    }
+}
+
+// Update dashboard
+function updateDashboard() {
+    debug('📊 Updating dashboard...');
+    
+    const selectedAccountId = document.getElementById('dashboard-account-selector')?.value;
+    let filteredTrades = trades;
+    let selectedAccount = null;
+
+    if (selectedAccountId) {
+        filteredTrades = trades.filter(trade => (trade.account_id || trade.accountId) == selectedAccountId);
+        selectedAccount = accounts.find(acc => acc.id == selectedAccountId);
+    }
+
+    // Update account balance display
+    if (selectedAccount) {
+        const accountTrades = trades.filter(trade => (trade.account_id || trade.accountId) == selectedAccountId);
+        const closedTrades = accountTrades.filter(trade => trade.exit_price || trade.exitPrice);
+        const totalPnL = closedTrades.reduce((sum, trade) => sum + (trade.pnl || 0), 0);
+        const totalReturn = selectedAccount.starting_balance || selectedAccount.startingBalance > 0 ? 
+            (totalPnL / (selectedAccount.starting_balance || selectedAccount.startingBalance) * 100) : 0;
+        
+        document.getElementById('dashboard-balance').textContent = 
+            `${selectedAccount.currency} ${(selectedAccount.current_balance || selectedAccount.currentBalance || 0).toLocaleString()}`;
+        document.getElementById('dashboard-balance-change').textContent = 
+            `${totalReturn >= 0 ? '+' : ''}${totalReturn.toFixed(2)}% total return (${totalPnL >= 0 ? '+' : ''}${totalPnL.toFixed(2)})`;
+    } else {
+        // Show total portfolio value
+        const totalValue = accounts.reduce((sum, acc) => sum + (acc.current_balance || acc.currentBalance || 0), 0);
+        const totalStarting = accounts.reduce((sum, acc) => sum + (acc.starting_balance || acc.startingBalance || 0), 0);
+        const totalReturn = totalStarting > 0 ? ((totalValue - totalStarting) / totalStarting * 100) : 0;
+        
+        document.getElementById('dashboard-balance').textContent = `${totalValue.toLocaleString()}`;
+        document.getElementById('dashboard-balance-change').textContent = 
+            totalStarting > 0 ? `${totalReturn >= 0 ? '+' : ''}${totalReturn.toFixed(2)}% total return` : 'No accounts yet';
+    }
+
+    // Update quick stats
+    const closedTrades = filteredTrades.filter(t => t.exit_price || t.exitPrice);
+    const winningTrades = closedTrades.filter(t => (t.pnl || 0) > 0);
+    const losingTrades = closedTrades.filter(t => (t.pnl || 0) < 0);
+
+    const totalTrades = filteredTrades.length;
+    const winRate = closedTrades.length > 0 ? (winningTrades.length / closedTrades.length * 100) : 0;
+    const totalPnL = closedTrades.reduce((sum, t) => sum + (t.pnl || 0), 0);
+
+    // Calculate profit factor
+    const avgWin = winningTrades.length > 0 ? winningTrades.reduce((sum, t) => sum + (t.pnl || 0), 0) / winningTrades.length : 0;
+    const avgLoss = losingTrades.length > 0 ? Math.abs(losingTrades.reduce((sum, t) => sum + (t.pnl || 0), 0) / losingTrades.length) : 0;
+    const profitFactor = avgLoss > 0 ? avgWin / avgLoss : 0;
+
+    // Calculate average RRR from trades with both stop loss and take profit
+    const tradesWithRRR = filteredTrades.filter(t => (t.stop_loss || t.stopLoss) && (t.take_profit || t.takeProfit) && (t.entry_price || t.entryPrice));
+    let avgRRR = 0;
+    
+    if (tradesWithRRR.length > 0) {
+        const totalRRR = tradesWithRRR.reduce((sum, trade) => {
+            const entryPrice = trade.entry_price || trade.entryPrice;
+            const stopLoss = trade.stop_loss || trade.stopLoss;
+            const takeProfit = trade.take_profit || trade.takeProfit;
+            const risk = Math.abs(entryPrice - stopLoss);
+            const reward = Math.abs(takeProfit - entryPrice);
+            return risk > 0 ? sum + (reward / risk) : sum;
+        }, 0);
+        avgRRR = totalRRR / tradesWithRRR.length;
+    }
+
+    // Calculate plan adherence
+    const tradesWithPlanData = filteredTrades.filter(t => t.hasOwnProperty('followed_plan') || t.hasOwnProperty('followedPlan'));
+    const planAdherence = tradesWithPlanData.length > 0 ? 
+        (tradesWithPlanData.filter(t => t.followed_plan || t.followedPlan).length / tradesWithPlanData.length * 100) : 0;
+
+    // Update dashboard elements if they exist
+    const dashElements = {
+        'dash-total-trades': totalTrades,
+        'dash-win-rate': winRate.toFixed(1) + '%',
+        'dash-total-pnl': 'ced';
+                break;
+            case 'syncing':
+                statusText.textContent = 'Syn + totalPnL.toFixed(2),
+        'dash-profit-factor': profitFactor.toFixed(2),
+        'dash-avg-rrr': avgRRR > 0 ? `1:${avgRRR.toFixed(2)}` : 'N/A',
+        'dash-plan-adherence': planAdherence.toFixed(1) + '%'
+    };
+
+    Object.entries(dashElements).forEach(([id, value]) => {
+        const element = document.getElementById(id);
+        if (element) {
+            element.textContent = value;
+        }
+    });
+
+    // Update recent trades
+    updateRecentTrades(filteredTrades);
+}
+
+function updateRecentTrades(filteredTrades) {
+    const container = document.getElementById('recent-trades-list');
+    if (!container) return;
+    
+    const recentTrades = filteredTrades.slice(0, 5);
+
+    if (recentTrades.length === 0) {
+        container.innerHTML = '<div class="empty-state"><p>No recent trades</p></div>';
+        return;
+    }
+
+    container.innerHTML = recentTrades.map(trade => {
+        const account = accounts.find(acc => acc.id === (trade.account_id || trade.accountId));
+        return `
+            <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px; border-bottom: 1px solid #e9ecef; transition: background 0.2s;">
+                <div>
+                    <div style="font-weight: 600; color: #2c3e50;">${trade.symbol}</div>
+                    <div style="font-size: 12px; color: #6c757d;">
+                        ${new Date(trade.date).toLocaleDateString()} • 
+                        <span style="font-size: 12px; padding: 2px 6px; border-radius: 4px; color: white; background: ${trade.side === 'Long' ? '#28a745' : '#dc3545'};">${trade.side}</span>
+                        ${account ? ` • ${account.name}` : ''}
+                    </div>
+                </div>
+                <div style="text-align: right;">
+                    <div class="${(trade.pnl || 0) >= 0 ? 'profit' : 'loss'}">
+                        ${(trade.pnl || 0) >= 0 ? '+' : ''}${Math.abs(trade.pnl || 0).toFixed(2)}
+                    </div>
+                    <div style="font-size: 12px; color: #6c757d;">
+                        ${trade.status || (trade.exit_price || trade.exitPrice ? 'Closed' : 'Open')}
+                    </div>
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
+// Other needed functions
+function updateTradesDisplay() {
+    // Implementation for trades display
+    debug('Updating trades display...');
+}
+
+function updateAccountList() {
+    // Implementation for account list
+    debug('Updating account list...');
+}
+
+function updateTradingPlanForm() {
+    // Implementation for trading plan form
+    debug('Updating trading plan form...');
+}
+
+function updateTradingPlanTooltip() {
+    // Implementation for trading plan tooltip
+    debug('Updating trading plan tooltip...');
+}
+
+function updateStatistics() {
+    // Implementation for statistics
+    debug('Updating statistics...');
+}
+
+function updateAccountDropdown() {
+    // Implementation for account dropdown
+    debug('Updating account dropdown...');
+}
+
+// Photo functions
+function setupPhotoUpload() {
+    debug('Setting up photo upload...');
+}
+
+function handleFileSelect(e) {
+    // Implementation
+}
+
+function handleFiles(files) {
+    // Implementation
+}
+
+function updatePhotoPreview() {
+    // Implementation
+}
+
+function openPhotoModal(imageSrc) {
+    document.getElementById('modal-photo').src = imageSrc;
+    document.getElementById('photo-modal').style.display = 'block';
+}
+
+function closePhotoModal() {
+    document.getElementById('photo-modal').style.display = 'none';
+}
+
+function removePhoto(photoId) {
+    currentPhotos = currentPhotos.filter(photo => photo.id != photoId);
+    updatePhotoPreview();
+}
+
+// Trade save function
+async function saveTrade(e) {
+    e.preventDefault();
+    debug('💾 Saving trade...');
+    showNotification('Saving trade...', 'info');
+    // Full implementation would go here
+}
+
+// Account functions
+function showAddAccountForm() {
+    const form = document.getElementById('add-account-form');
+    if (form) form.style.display = 'block';
+}
+
+function cancelAddAccount() {
+    const form = document.getElementById('add-account-form');
+    if (form) form.style.display = 'none';
+}
+
+async function addAccount() {
+    debug('Adding account...');
+    showNotification('Adding account...', 'info');
+    // Full implementation would go here
+}
+
+async function deleteAccount(id) {
+    debug('Deleting account...');
+    // Full implementation would go here
+}
+
+async function deleteTrade(id) {
+    debug('Deleting trade...');
+    // Full implementation would go here
+}
+
+// Trading plan functions
+async function saveTradingPlan() {
+    debug('Saving trading plan...');
+    showNotification('Saving trading plan...', 'info');
+    // Full implementation would go here
+}
+
+async function clearTradingPlan() {
+    debug('Clearing trading plan...');
+    // Full implementation would go here
+}
+
+// Global functions for onclick events
+window.showAddAccountForm = showAddAccountForm;
+window.cancelAddAccount = cancelAddAccount;
+window.addAccount = addAccount;
+window.deleteAccount = deleteAccount;
+window.deleteTrade = deleteTrade;
+window.openPhotoModal = openPhotoModal;
+window.closePhotoModal = closePhotoModal;
+window.removePhoto = removePhoto;
+window.saveTradingPlan = saveTradingPlan;
+window.clearTradingPlan = clearTradingPlan;
+window.previousMonth = previousMonth;
+window.nextMonth = nextMonth;
+window.goToCurrentMonth = goToCurrentMonth;
+window.showDayDetails = showDayDetails;
+window.showDayTooltip = showDayTooltip;
+window.hideDayTooltip = hideDayTooltip;
+
+// DOM ready event
+document.addEventListener('DOMContentLoaded', () => {
+    debug('📄 DOM Content Loaded');
+    setTimeout(() => {
+        debug('🚀 Starting app initialization...');
+        initApp();
+    }, 100);
+});
+
+// Safety check - run if DOM already loaded
+if (document.readyState === 'loading') {
+    debug('📄 Document still loading...');
+} else {
+    debug('📄 Document already loaded');
+    setTimeout(() => {
+        debug('🚀 Starting immediate initialization...');
+        initApp();
+    }, 100);
+}
+
+debug('📜 Trade Buddy with Calendar script setup complete');ced';
                 break;
             case 'syncing':
                 statusText.textContent = 'Syn
