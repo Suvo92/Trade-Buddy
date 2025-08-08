@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Trade Buddy - Complete Trading Journal</title>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.0/dist/umd/supabase.js"></script>
     <style>
         * {
             margin: 0;
@@ -17,23 +16,6 @@
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
             padding: 20px;
-        }
-
-        .debug-panel {
-            position: fixed;
-            top: 10px;
-            left: 10px;
-            background: rgba(0, 0, 0, 0.8);
-            color: white;
-            padding: 10px;
-            border-radius: 5px;
-            font-family: monospace;
-            font-size: 10px;
-            max-width: 250px;
-            max-height: 150px;
-            overflow-y: auto;
-            z-index: 9999;
-            opacity: 0.7;
         }
 
         .auth-container {
@@ -87,23 +69,6 @@
             transform: translateY(-2px);
         }
 
-        .auth-btn:disabled {
-            opacity: 0.6;
-            cursor: not-allowed;
-            transform: none;
-        }
-
-        .auth-toggle {
-            margin-top: 20px;
-            color: #6c757d;
-        }
-
-        .auth-toggle a {
-            color: #007bff;
-            text-decoration: none;
-            cursor: pointer;
-        }
-
         .container {
             max-width: 1400px;
             margin: 0 auto;
@@ -119,72 +84,6 @@
             color: white;
             padding: 30px;
             text-align: center;
-            position: relative;
-        }
-
-        .header h1 {
-            font-size: 2.5em;
-            margin-bottom: 10px;
-            font-weight: 300;
-        }
-
-        .header p {
-            opacity: 0.9;
-            font-size: 1.1em;
-        }
-
-        .user-info {
-            position: absolute;
-            top: 20px;
-            right: 20px;
-            background: rgba(255, 255, 255, 0.2);
-            padding: 10px 15px;
-            border-radius: 10px;
-            font-size: 12px;
-            display: flex;
-            gap: 10px;
-            align-items: center;
-        }
-
-        .logout-btn {
-            background: rgba(220, 53, 69, 0.8);
-            color: white;
-            border: none;
-            padding: 5px 10px;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 11px;
-        }
-
-        .sync-status {
-            display: flex;
-            align-items: center;
-            gap: 5px;
-            padding: 5px 8px;
-            background: rgba(0, 123, 255, 0.2);
-            border-radius: 5px;
-            font-size: 11px;
-        }
-
-        .sync-indicator {
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-            background: #28a745;
-        }
-
-        .sync-indicator.syncing {
-            background: #ffc107;
-            animation: pulse 1s infinite;
-        }
-
-        .sync-indicator.error {
-            background: #dc3545;
-        }
-
-        @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.5; }
         }
 
         .nav-tabs {
@@ -220,29 +119,12 @@
         }
 
         .tab-content {
-            display: none !important;
+            display: none;
             padding: 30px;
-            animation: fadeIn 0.3s ease;
         }
 
         .tab-content.active {
-            display: block !important;
-        }
-
-        .tab-content:not(.active) {
-            display: none !important;
-            visibility: hidden !important;
-            opacity: 0 !important;
-            height: 0 !important;
-            overflow: hidden !important;
-            position: absolute !important;
-            left: -99999px !important;
-            top: -99999px !important;
-        }
-
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
+            display: block;
         }
 
         .form-section {
@@ -254,110 +136,6 @@
             border: 1px solid #e9ecef;
         }
 
-        .form-section h3 {
-            color: #2c3e50;
-            margin-bottom: 20px;
-            font-size: 1.3em;
-            border-bottom: 2px solid #e9ecef;
-            padding-bottom: 10px;
-        }
-
-        .form-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 20px;
-            margin-bottom: 20px;
-        }
-
-        .form-group {
-            display: flex;
-            flex-direction: column;
-        }
-
-        label {
-            font-weight: 600;
-            color: #495057;
-            margin-bottom: 8px;
-            font-size: 14px;
-        }
-
-        input, select, textarea {
-            padding: 12px 15px;
-            border: 2px solid #e9ecef;
-            border-radius: 8px;
-            font-size: 14px;
-            transition: all 0.3s ease;
-            background: white;
-        }
-
-        input:focus, select:focus, textarea:focus {
-            outline: none;
-            border-color: #007bff;
-            box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
-        }
-
-        textarea {
-            resize: vertical;
-            min-height: 100px;
-        }
-
-        .btn {
-            padding: 12px 30px;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: 16px;
-            font-weight: 600;
-            transition: all 0.3s ease;
-            margin: 5px;
-        }
-
-        .btn-primary {
-            background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
-            color: white;
-        }
-
-        .btn-primary:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(0, 123, 255, 0.3);
-        }
-
-        .btn-secondary {
-            background: #6c757d;
-            color: white;
-        }
-
-        .btn-secondary:hover {
-            background: #5a6268;
-            transform: translateY(-2px);
-        }
-
-        .btn-danger {
-            background: #dc3545;
-            color: white;
-        }
-
-        .btn-danger:hover {
-            background: #c82333;
-            transform: translateY(-2px);
-        }
-
-        .btn-success {
-            background: #28a745;
-            color: white;
-        }
-
-        .btn-success:hover {
-            background: #218838;
-            transform: translateY(-2px);
-        }
-
-        .btn-small {
-            padding: 8px 16px;
-            font-size: 14px;
-        }
-
-        /* Calendar specific styles */
         .calendar-controls {
             display: flex;
             align-items: center;
@@ -411,10 +189,6 @@
             color: #adb5bd;
         }
 
-        .calendar-day.other-month .calendar-day-number {
-            color: #adb5bd;
-        }
-
         .calendar-day.today {
             border: 2px solid #007bff;
             background: #e7f3ff;
@@ -430,47 +204,11 @@
             border-left: 4px solid #dc3545;
         }
 
-        .calendar-day.mixed-day {
-            background: linear-gradient(135deg, #fff3cd 0%, #ffeaa7 100%);
-            border-left: 4px solid #ffc107;
-        }
-
         .calendar-day-number {
             font-weight: 600;
             font-size: 14px;
             color: #495057;
             margin-bottom: 4px;
-        }
-
-        .calendar-day-pnl {
-            font-weight: 700;
-            font-size: 13px;
-            margin-bottom: 2px;
-        }
-
-        .calendar-day-pnl.profit {
-            color: #155724;
-        }
-
-        .calendar-day-pnl.loss {
-            color: #721c24;
-        }
-
-        .calendar-day-pnl.mixed {
-            color: #856404;
-        }
-
-        .calendar-day-trades {
-            font-size: 11px;
-            color: #6c757d;
-            margin-top: auto;
-        }
-
-        .calendar-no-trades {
-            font-size: 11px;
-            color: #adb5bd;
-            text-align: center;
-            margin-top: 20px;
         }
 
         .calendar-summary {
@@ -483,132 +221,30 @@
             box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
         }
 
-        .calendar-summary-item {
-            text-align: center;
-            padding: 15px;
+        .btn {
+            padding: 12px 30px;
+            border: none;
             border-radius: 8px;
-            background: #f8f9fa;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            margin: 5px;
         }
 
-        .calendar-summary-item.profit {
-            background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%);
-            border-left: 4px solid #28a745;
-        }
-
-        .calendar-summary-item.loss {
-            background: linear-gradient(135deg, #f8d7da 0%, #f1b0b7 100%);
-            border-left: 4px solid #dc3545;
-        }
-
-        .calendar-summary-value {
-            font-size: 1.8em;
-            font-weight: 700;
-            margin-bottom: 5px;
-        }
-
-        .calendar-summary-value.profit {
-            color: #155724;
-        }
-
-        .calendar-summary-value.loss {
-            color: #721c24;
-        }
-
-        .calendar-summary-label {
-            font-size: 12px;
-            color: #6c757d;
-            font-weight: 500;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-
-        .calendar-trade-tooltip {
-            position: absolute;
-            background: #2c3e50;
+        .btn-primary {
+            background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
             color: white;
-            padding: 10px;
-            border-radius: 5px;
-            font-size: 12px;
-            z-index: 1000;
-            max-width: 250px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-            pointer-events: none;
-            opacity: 0;
-            transition: opacity 0.2s;
         }
 
-        .calendar-trade-tooltip.show {
-            opacity: 1;
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
         }
 
-        .calendar-trade-tooltip::after {
-            content: '';
-            position: absolute;
-            top: 100%;
-            left: 50%;
-            margin-left: -5px;
-            border-width: 5px;
-            border-style: solid;
-            border-color: #2c3e50 transparent transparent transparent;
-        }
-
-        .dashboard-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-            gap: 20px;
-            margin-bottom: 30px;
-        }
-
-        .dashboard-card {
-            background: white;
-            border-radius: 15px;
-            padding: 25px;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
-            border: 1px solid #e9ecef;
-        }
-
-        .dashboard-card h4 {
-            color: #2c3e50;
-            margin-bottom: 20px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .quick-stats {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-            gap: 15px;
-        }
-
-        .quick-stat {
-            text-align: center;
-            padding: 15px;
-            background: #f8f9fa;
-            border-radius: 10px;
-        }
-
-        .quick-stat-value {
-            font-size: 1.8em;
-            font-weight: 700;
-            color: #2c3e50;
-        }
-
-        .quick-stat-label {
-            font-size: 12px;
-            color: #6c757d;
-            margin-top: 5px;
-        }
-
-        .empty-state {
-            text-align: center;
-            padding: 60px 20px;
-            color: #6c757d;
-        }
-
-        .empty-state h3 {
-            margin-bottom: 15px;
-            color: #495057;
+        .btn-small {
+            padding: 8px 16px;
+            font-size: 14px;
         }
 
         .notification {
@@ -632,420 +268,13 @@
             background: #dc3545;
         }
 
-        .notification.info {
-            background: #17a2b8;
-        }
-
         @keyframes slideIn {
             from { transform: translateX(100%); }
             to { transform: translateX(0); }
         }
-
-        .trades-table {
-            width: 100%;
-            border-collapse: collapse;
-            background: white;
-            border-radius: 10px;
-            overflow: hidden;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
-        }
-
-        .trades-table th {
-            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-            padding: 15px 10px;
-            text-align: left;
-            font-weight: 600;
-            color: #495057;
-            font-size: 14px;
-        }
-
-        .trades-table td {
-            padding: 12px 10px;
-            border-bottom: 1px solid #e9ecef;
-            font-size: 13px;
-            vertical-align: middle;
-        }
-
-        .trades-table tr:hover {
-            background: rgba(0, 123, 255, 0.05);
-        }
-
-        .profit {
-            color: #28a745;
-            font-weight: 600;
-        }
-
-        .loss {
-            color: #dc3545;
-            font-weight: 600;
-        }
-
-        .account-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 12px;
-            background: white;
-            border-radius: 8px;
-            margin: 10px 0;
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
-        }
-
-        .account-info {
-            flex: 1;
-        }
-
-        .account-name {
-            font-weight: 600;
-            color: #2c3e50;
-        }
-
-        .account-balance {
-            font-size: 14px;
-            color: #6c757d;
-        }
-
-        .account-actions {
-            display: flex;
-            gap: 5px;
-        }
-
-        .plan-indicator {
-            display: inline-block;
-            padding: 4px 8px;
-            border-radius: 4px;
-            font-size: 11px;
-            font-weight: 600;
-            text-transform: uppercase;
-        }
-
-        .plan-followed {
-            background: #d4edda;
-            color: #155724;
-        }
-
-        .plan-not-followed {
-            background: #f8d7da;
-            color: #721c24;
-        }
-
-        .search-filter {
-            display: flex;
-            gap: 15px;
-            margin-bottom: 20px;
-            flex-wrap: wrap;
-            align-items: center;
-            background: #f8f9fa;
-            padding: 20px;
-            border-radius: 10px;
-            border: 1px solid #e9ecef;
-        }
-
-        .search-filter input, .search-filter select {
-            flex: 1;
-            min-width: 150px;
-            margin: 0;
-        }
-
-        .search-filter .btn {
-            margin: 0;
-            white-space: nowrap;
-        }
-
-        .photo-upload-section {
-            background: #f8f9fa;
-            border: 2px dashed #dee2e6;
-            border-radius: 10px;
-            padding: 20px;
-            text-align: center;
-            margin: 20px 0;
-            transition: all 0.3s ease;
-        }
-
-        .photo-upload-section:hover {
-            border-color: #007bff;
-            background: rgba(0, 123, 255, 0.05);
-        }
-
-        .photo-upload-section.dragover {
-            border-color: #007bff;
-            background: rgba(0, 123, 255, 0.1);
-        }
-
-        .photo-input {
-            display: none;
-        }
-
-        .photo-upload-btn {
-            background: #007bff;
-            color: white;
-            padding: 10px 20px;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 14px;
-            margin: 10px;
-        }
-
-        .photo-preview {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 10px;
-            margin-top: 15px;
-        }
-
-        .photo-item {
-            position: relative;
-            width: 100px;
-            height: 100px;
-            border-radius: 8px;
-            overflow: hidden;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-        }
-
-        .photo-item img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            cursor: pointer;
-        }
-
-        .photo-item .remove-photo {
-            position: absolute;
-            top: 5px;
-            right: 5px;
-            background: rgba(220, 53, 69, 0.9);
-            color: white;
-            border: none;
-            border-radius: 50%;
-            width: 20px;
-            height: 20px;
-            font-size: 12px;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .photo-modal {
-            display: none;
-            position: fixed;
-            z-index: 1100;
-            left: 0;
-            top: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0, 0, 0, 0.8);
-            animation: fadeIn 0.3s ease;
-        }
-
-        .photo-modal-content {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            max-width: 95%;
-            max-height: 95%;
-            background: white;
-            border-radius: 15px;
-            padding: 20px;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
-        }
-
-        .photo-modal img {
-            width: 100%;
-            height: auto;
-            max-height: 80vh;
-            object-fit: contain;
-            border-radius: 10px;
-        }
-
-        .photo-modal .close {
-            position: absolute;
-            top: 15px;
-            right: 25px;
-            color: white;
-            font-size: 35px;
-            font-weight: bold;
-            cursor: pointer;
-        }
-
-        .trade-photos {
-            display: flex;
-            gap: 5px;
-            max-width: 150px;
-        }
-
-        .trade-photos img {
-            width: 30px;
-            height: 30px;
-            object-fit: cover;
-            border-radius: 4px;
-            cursor: pointer;
-            transition: transform 0.2s;
-        }
-
-        .trade-photos img:hover {
-            transform: scale(1.2);
-        }
-
-        .plan-adherence {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            margin: 15px 0;
-            padding: 12px;
-            background: #e7f3ff;
-            border-radius: 8px;
-            border: 1px solid #b3d9ff;
-        }
-
-        .plan-checkbox {
-            width: 20px;
-            height: 20px;
-            cursor: pointer;
-        }
-
-        .plan-tooltip {
-            position: relative;
-            display: inline-block;
-            cursor: help;
-        }
-
-        .plan-tooltip .tooltiptext {
-            visibility: hidden;
-            width: 300px;
-            background-color: #2c3e50;
-            color: white;
-            text-align: left;
-            border-radius: 8px;
-            padding: 15px;
-            position: absolute;
-            z-index: 1001;
-            bottom: 125%;
-            left: 50%;
-            margin-left: -150px;
-            opacity: 0;
-            transition: opacity 0.3s;
-            font-size: 14px;
-            line-height: 1.4;
-        }
-
-        .plan-tooltip .tooltiptext::after {
-            content: "";
-            position: absolute;
-            top: 100%;
-            left: 50%;
-            margin-left: -5px;
-            border-width: 5px;
-            border-style: solid;
-            border-color: #2c3e50 transparent transparent transparent;
-        }
-
-        .plan-tooltip:hover .tooltiptext {
-            visibility: visible;
-            opacity: 1;
-        }
-
-        .plan-item {
-            margin: 10px 0;
-            padding: 15px;
-            background: #f8f9fa;
-            border-radius: 8px;
-            border-left: 4px solid #007bff;
-        }
-
-        .plan-item h5 {
-            color: #2c3e50;
-            margin-bottom: 10px;
-        }
-
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 20px;
-            margin-bottom: 30px;
-        }
-
-        .stat-card {
-            background: white;
-            padding: 20px;
-            border-radius: 15px;
-            text-align: center;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
-            border: 1px solid #e9ecef;
-            transition: transform 0.3s ease;
-        }
-
-        .stat-card:hover {
-            transform: translateY(-5px);
-        }
-
-        .stat-value {
-            font-size: 2em;
-            font-weight: 700;
-            color: #2c3e50;
-            margin-bottom: 5px;
-        }
-
-        .stat-value.profit {
-            color: #28a745;
-        }
-
-        .stat-value.loss {
-            color: #dc3545;
-        }
-
-        .stat-label {
-            color: #6c757d;
-            font-weight: 500;
-        }
-
-        @media (max-width: 768px) {
-            body {
-                padding: 10px;
-            }
-
-            .auth-container {
-                margin: 50px auto;
-                padding: 30px;
-            }
-
-            .container {
-                margin: 0;
-            }
-
-            .nav-tabs {
-                flex-direction: column;
-            }
-
-            .nav-tab {
-                flex: none;
-            }
-
-            .form-grid, .dashboard-grid {
-                grid-template-columns: 1fr;
-            }
-
-            .user-info {
-                position: relative;
-                top: auto;
-                right: auto;
-                margin-top: 10px;
-            }
-
-            .quick-stats {
-                grid-template-columns: repeat(2, 1fr);
-            }
-        }
     </style>
 </head>
 <body>
-    <!-- Debug Panel -->
-    <div id="debug-panel" class="debug-panel">
-        <div id="debug-log">Starting...</div>
-    </div>
-
     <!-- Auth Container -->
     <div id="auth-container" class="auth-container">
         <h1>📈 Trade Buddy</h1>
@@ -1055,8 +284,8 @@
                 <input type="password" id="auth-password" class="auth-input" placeholder="Password" required>
                 <button type="submit" id="auth-submit" class="auth-btn">Sign In</button>
             </form>
-            <div class="auth-toggle">
-                Don't have an account? <a id="auth-toggle-link">Sign up</a>
+            <div style="margin-top: 20px; color: #6c757d;">
+                Don't have an account? <a href="#" id="auth-toggle-link" style="color: #007bff; text-decoration: none;">Sign up</a>
             </div>
         </div>
     </div>
@@ -1065,336 +294,25 @@
     <div class="container" id="main-container">
         <div class="header">
             <h1>📈 Trade Buddy</h1>
-            <p>Your trusty trading journal to help you take on the markets 💪</p>
-            <div class="user-info">
-                <div class="sync-status">
-                    <div class="sync-indicator" id="sync-indicator"></div>
-                    <span id="sync-status-text">Synced</span>
-                </div>
-                <span id="user-email">Loading...</span>
-                <button class="logout-btn" id="logout-btn">Logout</button>
+            <p>Your trusty trading journal with calendar</p>
+            <div style="position: absolute; top: 20px; right: 20px;">
+                <span id="user-email" style="margin-right: 10px;">Loading...</span>
+                <button onclick="logout()" style="background: rgba(220, 53, 69, 0.8); color: white; border: none; padding: 5px 10px; border-radius: 5px; cursor: pointer;">Logout</button>
             </div>
         </div>
 
         <div class="nav-tabs">
             <button class="nav-tab active" data-tab="dashboard">Dashboard</button>
-            <button class="nav-tab" data-tab="add-trade">Add Trade</button>
-            <button class="nav-tab" data-tab="trading-plan">Trading Plan</button>
             <button class="nav-tab" data-tab="calendar">Calendar</button>
-            <button class="nav-tab" data-tab="accounts">Accounts</button>
-            <button class="nav-tab" data-tab="trades">Trade History</button>
-            <button class="nav-tab" data-tab="statistics">Statistics</button>
-            <button class="nav-tab" data-tab="settings">Settings</button>
+            <button class="nav-tab" data-tab="add-trade">Add Trade</button>
         </div>
 
         <!-- Dashboard Tab -->
         <div id="dashboard" class="tab-content active">
-            <div class="dashboard-grid">
-                <!-- Account Balance -->
-                <div class="dashboard-card">
-                    <h4>💰 Account Balance</h4>
-                    <div style="margin-bottom: 15px;">
-                        <select id="dashboard-account-selector">
-                            <option value="">All Accounts</option>
-                        </select>
-                    </div>
-                    <div style="text-align: center; padding: 20px 0;">
-                        <div style="font-size: 2.5em; font-weight: 700; margin-bottom: 10px;" id="dashboard-balance">$0.00</div>
-                        <div style="font-size: 1.1em; opacity: 0.9;" id="dashboard-balance-change">No trades yet</div>
-                    </div>
-                </div>
-
-                <!-- Quick Stats -->
-                <div class="dashboard-card">
-                    <h4>📊 Quick Stats</h4>
-                    <div class="quick-stats">
-                        <div class="quick-stat">
-                            <div class="quick-stat-value" id="dash-total-trades">0</div>
-                            <div class="quick-stat-label">Total Trades</div>
-                        </div>
-                        <div class="quick-stat">
-                            <div class="quick-stat-value" id="dash-win-rate">0%</div>
-                            <div class="quick-stat-label">Win Rate</div>
-                        </div>
-                        <div class="quick-stat">
-                            <div class="quick-stat-value" id="dash-total-pnl">$0</div>
-                            <div class="quick-stat-label">Total P&L</div>
-                        </div>
-                        <div class="quick-stat">
-                            <div class="quick-stat-value" id="dash-profit-factor">0</div>
-                            <div class="quick-stat-label">Profit Factor</div>
-                        </div>
-                        <div class="quick-stat">
-                            <div class="quick-stat-value" id="dash-avg-rrr">N/A</div>
-                            <div class="quick-stat-label">Avg RRR</div>
-                        </div>
-                        <div class="quick-stat">
-                            <div class="quick-stat-value" id="dash-plan-adherence">0%</div>
-                            <div class="quick-stat-label">Plan Adherence</div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Recent Trades -->
-                <div class="dashboard-card">
-                    <h4>🕒 Recent Trades</h4>
-                    <div style="max-height: 300px; overflow-y: auto;" id="recent-trades-list">
-                        <div class="empty-state">
-                            <p>No recent trades</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Add Trade Tab -->
-        <div id="add-trade" class="tab-content">
             <div class="form-section">
-                <h3>📝 New Trade Entry</h3>
-                <form id="trade-form">
-                    <div class="form-grid">
-                        <div class="form-group">
-                            <label for="trade-account">Account *</label>
-                            <select id="trade-account" required>
-                                <option value="">Select Account</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label for="date">Date *</label>
-                            <input type="datetime-local" id="date" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="symbol">Symbol *</label>
-                            <input type="text" id="symbol" placeholder="e.g., AAPL, NZDUSD" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="side">Side *</label>
-                            <select id="side" required>
-                                <option value="">Select...</option>
-                                <option value="Long">Long</option>
-                                <option value="Short">Short</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label for="quantity">Quantity *</label>
-                            <input type="number" id="quantity" step="0.01" placeholder="1.0 (for 1 lot)" required>
-                            <small style="color: #6c757d; font-size: 12px;">
-                                For forex: enter lot size (e.g., 1.0 for 1 standard lot)<br>
-                                For stocks: enter number of shares
-                            </small>
-                        </div>
-                        <div class="form-group">
-                            <label for="entry-price">Entry Price *</label>
-                            <input type="number" id="entry-price" step="0.00001" placeholder="0.60328" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="exit-price">Exit Price</label>
-                            <input type="number" id="exit-price" step="0.00001" placeholder="0.60450">
-                        </div>
-                        <div class="form-group">
-                            <label for="manual-pnl">Manual P&L (Optional)</label>
-                            <input type="number" id="manual-pnl" step="0.01" placeholder="Enter actual P&L if known">
-                            <small style="color: #6c757d; font-size: 12px;">Leave blank for automatic calculation</small>
-                        </div>
-                        <div class="form-group">
-                            <label for="commission">Commission (Optional)</label>
-                            <input type="number" id="commission" step="0.01" placeholder="0.00">
-                            <small style="color: #6c757d; font-size: 12px;">Enter total commission/fees for this trade</small>
-                        </div>
-                        <div class="form-group">
-                            <label for="swap">Swap/Interest (Optional)</label>
-                            <input type="number" id="swap" step="0.01" placeholder="0.00">
-                            <small style="color: #6c757d; font-size: 12px;">Enter swap/rollover fees (negative for charges)</small>
-                        </div>
-                        <div class="form-group">
-                            <label for="stop-loss">Stop Loss</label>
-                            <input type="number" id="stop-loss" step="0.00001" placeholder="0.60200">
-                        </div>
-                        <div class="form-group">
-                            <label for="take-profit">Take Profit</label>
-                            <input type="number" id="take-profit" step="0.00001" placeholder="0.60500">
-                        </div>
-                        <div class="form-group">
-                            <label for="strategy">Strategy</label>
-                            <select id="strategy">
-                                <option value="">Select...</option>
-                                <option value="Breakout">Breakout</option>
-                                <option value="Reversal">Reversal</option>
-                                <option value="Trend Following">Trend Following</option>
-                                <option value="Scalping">Scalping</option>
-                                <option value="Swing Trading">Swing Trading</option>
-                                <option value="Day Trading">Day Trading</option>
-                                <option value="Options">Options</option>
-                                <option value="Futures">Futures</option>
-                                <option value="Forex">Forex</option>
-                                <option value="Other">Other</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label for="market-condition">Market Condition</label>
-                            <select id="market-condition">
-                                <option value="">Select...</option>
-                                <option value="Trending Up">Trending Up</option>
-                                <option value="Trending Down">Trending Down</option>
-                                <option value="Ranging">Ranging</option>
-                                <option value="Volatile">Volatile</option>
-                                <option value="Low Volume">Low Volume</option>
-                                <option value="High Volume">High Volume</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label for="risk-rating">Risk Rating</label>
-                            <select id="risk-rating">
-                                <option value="">Select...</option>
-                                <option value="Low">Low (1-2%)</option>
-                                <option value="Medium">Medium (2-3%)</option>
-                                <option value="High">High (3%+)</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label for="confidence">Confidence Level</label>
-                            <select id="confidence">
-                                <option value="">Select...</option>
-                                <option value="Very Low">Very Low (1-2)</option>
-                                <option value="Low">Low (3-4)</option>
-                                <option value="Medium">Medium (5-6)</option>
-                                <option value="High">High (7-8)</option>
-                                <option value="Very High">Very High (9-10)</option>
-                            </select>
-                        </div>
-                    </div>
-                    
-                    <!-- Trading Plan Adherence -->
-                    <div class="plan-adherence">
-                        <input type="checkbox" id="followed-plan" class="plan-checkbox">
-                        <label for="followed-plan">Followed Trading Plan?</label>
-                        <div class="plan-tooltip">
-                            ℹ️
-                            <span class="tooltiptext" id="plan-tooltip-text">
-                                No trading plan defined yet.<br>
-                                Go to Trading Plan tab to create your plan.
-                            </span>
-                        </div>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="setup-description">Setup Description</label>
-                        <textarea id="setup-description" placeholder="Describe your trade setup, technical analysis, entry/exit criteria, and reasoning..."></textarea>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="emotions">Emotions & Psychology</label>
-                        <textarea id="emotions" placeholder="How did you feel before/during/after the trade? Any emotional challenges? FOMO, fear, greed, etc."></textarea>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="lessons">Lessons Learned</label>
-                        <textarea id="lessons" placeholder="What did you learn from this trade? What would you do differently? What went well?"></textarea>
-                    </div>
-
-                    <!-- Photo Upload Section -->
-                    <div class="photo-upload-section" id="photo-drop-zone">
-                        <h4>📸 Trade Photos</h4>
-                        <p>Add charts, screenshots, or any visual documentation</p>
-                        <input type="file" id="photo-input" class="photo-input" multiple accept="image/*">
-                        <button type="button" class="photo-upload-btn" onclick="document.getElementById('photo-input').click()">
-                            📎 Choose Photos
-                        </button>
-                        <p style="margin-top: 10px; font-size: 12px; color: #6c757d;">
-                            Or drag and drop photos here
-                        </p>
-                        <div class="photo-preview" id="photo-preview"></div>
-                    </div>
-
-                    <button type="submit" class="btn btn-primary">💾 Save Trade</button>
-                    <button type="reset" class="btn btn-secondary">🔄 Clear Form</button>
-                </form>
-            </div>
-        </div>
-
-        <!-- Trading Plan Tab -->
-        <div id="trading-plan" class="tab-content">
-            <div class="form-section">
-                <h3>📋 Trading Plan</h3>
-                <p style="margin-bottom: 20px; color: #6c757d;">
-                    Define your trading rules and criteria. This plan will be referenced when adding trades to track your discipline.
-                </p>
-                
-                <form id="trading-plan-form">
-                    <div class="plan-item">
-                        <h5>🎯 Entry Criteria</h5>
-                        <div class="form-group">
-                            <textarea id="entry-criteria" placeholder="Define your entry criteria (technical indicators, chart patterns, setups, confirmations needed, etc.)"></textarea>
-                        </div>
-                    </div>
-
-                    <div class="plan-item">
-                        <h5>🚪 Exit Criteria</h5>
-                        <div class="form-grid">
-                            <div class="form-group">
-                                <label for="profit-targets">Profit Target Rules</label>
-                                <textarea id="profit-targets" placeholder="When and how do you take profits? (R:R ratios, percentage targets, technical levels, etc.)"></textarea>
-                            </div>
-                            <div class="form-group">
-                                <label for="stop-loss-rules">Stop Loss Rules</label>
-                                <textarea id="stop-loss-rules" placeholder="How do you set stop losses? (percentage, technical levels, trailing stops, etc.)"></textarea>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="plan-item">
-                        <h5>💰 Risk Management</h5>
-                        <div class="form-grid">
-                            <div class="form-group">
-                                <label for="position-sizing">Position Sizing Rules</label>
-                                <textarea id="position-sizing" placeholder="How do you calculate position size? (% of account, fixed dollar amount, volatility-based, etc.)"></textarea>
-                            </div>
-                            <div class="form-group">
-                                <label for="daily-loss-limit">Daily/Weekly Loss Limits</label>
-                                <textarea id="daily-loss-limit" placeholder="What are your maximum daily/weekly loss limits? When do you stop trading?"></textarea>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="plan-item">
-                        <h5>🌍 Market Conditions</h5>
-                        <div class="form-grid">
-                            <div class="form-group">
-                                <label for="trading-conditions">Ideal Trading Conditions</label>
-                                <textarea id="trading-conditions" placeholder="What market conditions do you trade best in? (trending, ranging, high/low volatility, etc.)"></textarea>
-                            </div>
-                            <div class="form-group">
-                                <label for="avoid-conditions">Conditions to Avoid</label>
-                                <textarea id="avoid-conditions" placeholder="When should you NOT trade? (news events, low liquidity times, etc.)"></textarea>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="plan-item">
-                        <h5>⏰ Trading Schedule</h5>
-                        <div class="form-grid">
-                            <div class="form-group">
-                                <label for="trading-hours">Trading Hours</label>
-                                <textarea id="trading-hours" placeholder="What are your optimal trading hours? When are you most focused?"></textarea>
-                            </div>
-                            <div class="form-group">
-                                <label for="avoid-times">Times to Avoid</label>
-                                <textarea id="avoid-times" placeholder="When should you avoid trading? (news releases, end of day, etc.)"></textarea>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="plan-item">
-                        <h5>🧠 Emotional Rules</h5>
-                        <div class="form-group">
-                            <label for="emotional-rules">Psychological Guidelines</label>
-                            <textarea id="emotional-rules" placeholder="Rules for managing emotions (no revenge trading, walk away after X losses, meditation before trading, etc.)"></textarea>
-                        </div>
-                    </div>
-
-                    <button type="button" class="btn btn-primary" onclick="saveTradingPlan()">💾 Save Trading Plan</button>
-                    <button type="button" class="btn btn-secondary" onclick="clearTradingPlan()">🔄 Clear Plan</button>
-                </form>
+                <h3>Dashboard</h3>
+                <p>Welcome to Trade Buddy! Your trades will appear here.</p>
+                <div id="trades-count">Total Trades: 0</div>
             </div>
         </div>
 
@@ -1407,9 +325,6 @@
                     <h4 id="calendar-month-year" style="display: inline-block; margin: 0 20px;"></h4>
                     <button class="btn btn-secondary btn-small" onclick="nextMonth()">&gt;</button>
                     <button class="btn btn-primary btn-small" onclick="goToCurrentMonth()" style="margin-left: 20px;">Today</button>
-                    <select id="calendar-year-selector" style="margin-left: 20px; padding: 8px;">
-                        <!-- Years will be populated here -->
-                    </select>
                 </div>
                 <div id="calendar-container">
                     <div class="calendar-grid" id="calendar-grid">
@@ -1422,1179 +337,335 @@
             </div>
         </div>
 
-        <!-- Trade History Tab -->
-        <div id="trades" class="tab-content">
+        <!-- Add Trade Tab -->
+        <div id="add-trade" class="tab-content">
             <div class="form-section">
-                <h3>📊 Trade History</h3>
-                
-                <div id="trades-container">
-                    <div class="empty-state">
-                        <h3>No trades recorded yet</h3>
-                        <p>Start by adding your first trade using the "Add Trade" tab</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Accounts Tab -->
-        <div id="accounts" class="tab-content">
-            <div class="form-section">
-                <h3>💳 Account Management</h3>
-                <p>Manage your trading accounts:</p>
-                
-                <div id="account-list">
-                    <div class="empty-state">
-                        <p>No accounts created yet.</p>
-                    </div>
-                </div>
-                
-                <button type="button" class="btn btn-primary btn-small" onclick="showAddAccountForm()">
-                    ➕ Add New Account
-                </button>
-                
-                <div class="add-account-form" id="add-account-form" style="display: none; background: white; padding: 20px; border-radius: 10px; margin: 15px 0; border: 1px solid #dee2e6;">
-                    <h4>Add New Trading Account</h4>
-                    <div class="form-grid">
-                        <div class="form-group">
-                            <label for="new-account-name">Account Name *</label>
-                            <input type="text" id="new-account-name" placeholder="e.g., Interactive Brokers Main" required>
+                <h3>Add Trade</h3>
+                <form id="trade-form">
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px;">
+                        <div>
+                            <label>Date</label>
+                            <input type="datetime-local" id="date" required style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
                         </div>
-                        <div class="form-group">
-                            <label for="new-account-type">Account Type</label>
-                            <select id="new-account-type">
-                                <option value="Cash">Cash Account</option>
-                                <option value="Margin">Margin Account</option>
-                                <option value="IRA">IRA</option>
-                                <option value="Demo">Demo/Paper Trading</option>
-                                <option value="Other">Other</option>
+                        <div>
+                            <label>Symbol</label>
+                            <input type="text" id="symbol" placeholder="e.g., AAPL" required style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                        </div>
+                        <div>
+                            <label>Side</label>
+                            <select id="side" required style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                                <option value="">Select...</option>
+                                <option value="Long">Long</option>
+                                <option value="Short">Short</option>
                             </select>
                         </div>
-                        <div class="form-group">
-                            <label for="new-account-broker">Broker</label>
-                            <input type="text" id="new-account-broker" placeholder="e.g., Interactive Brokers">
+                        <div>
+                            <label>Quantity</label>
+                            <input type="number" id="quantity" step="0.01" required style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
                         </div>
-                        <div class="form-group">
-                            <label for="new-account-currency">Currency</label>
-                            <select id="new-account-currency">
-                                <option value="USD">USD ($)</option>
-                                <option value="EUR">EUR (€)</option>
-                                <option value="GBP">GBP (£)</option>
-                                <option value="JPY">JPY (¥)</option>
-                                <option value="CAD">CAD (C$)</option>
-                                <option value="AUD">AUD (A$)</option>
-                            </select>
+                        <div>
+                            <label>Entry Price</label>
+                            <input type="number" id="entry-price" step="0.00001" required style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
                         </div>
-                        <div class="form-group">
-                            <label for="new-account-balance">Starting Balance *</label>
-                            <input type="number" id="new-account-balance" step="0.01" placeholder="10000.00" required>
+                        <div>
+                            <label>Exit Price</label>
+                            <input type="number" id="exit-price" step="0.00001" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
                         </div>
                     </div>
-                    <button type="button" class="btn btn-primary" onclick="addAccount()">Add Account</button>
-                    <button type="button" class="btn btn-secondary" onclick="cancelAddAccount()">Cancel</button>
-                </div>
-            </div>
-        </div>
-
-        <!-- Statistics Tab -->
-        <div id="statistics" class="tab-content">
-            <div class="form-section">
-                <h3>📈 Performance Statistics</h3>
-                <div id="stats-container">
-                    <div class="stats-grid">
-                        <div class="stat-card">
-                            <div class="stat-value" id="total-trades">0</div>
-                            <div class="stat-label">Total Trades</div>
-                        </div>
-                        <div class="stat-card">
-                            <div class="stat-value" id="win-rate">0%</div>
-                            <div class="stat-label">Win Rate</div>
-                        </div>
-                        <div class="stat-card">
-                            <div class="stat-value" id="total-pnl">$0</div>
-                            <div class="stat-label">Total P&L</div>
-                        </div>
-                        <div class="stat-card">
-                            <div class="stat-value" id="avg-win">$0</div>
-                            <div class="stat-label">Average Win</div>
-                        </div>
-                        <div class="stat-card">
-                            <div class="stat-value" id="avg-loss">$0</div>
-                            <div class="stat-label">Average Loss</div>
-                        </div>
-                        <div class="stat-card">
-                            <div class="stat-value" id="profit-factor">0</div>
-                            <div class="stat-label">Profit Factor</div>
-                        </div>
-                        <div class="stat-card">
-                            <div class="stat-value" id="largest-win">$0</div>
-                            <div class="stat-label">Largest Win</div>
-                        </div>
-                        <div class="stat-card">
-                            <div class="stat-value" id="largest-loss">$0</div>
-                            <div class="stat-label">Largest Loss</div>
-                        </div>
-                        <div class="stat-card">
-                            <div class="stat-value" id="avg-rrr">0:0</div>
-                            <div class="stat-label">Average RRR</div>
-                        </div>
-                        <div class="stat-card">
-                            <div class="stat-value" id="plan-adherence-stat">0%</div>
-                            <div class="stat-label">Plan Adherence</div>
-                        </div>
-                        <div class="stat-card">
-                            <div class="stat-value" id="consecutive-wins">0</div>
-                            <div class="stat-label">Max Consecutive Wins</div>
-                        </div>
-                        <div class="stat-card">
-                            <div class="stat-value" id="consecutive-losses">0</div>
-                            <div class="stat-label">Max Consecutive Losses</div>
-                        </div>
-                        <div class="stat-card">
-                            <div class="stat-value" id="profitable-trades">0</div>
-                            <div class="stat-label">Profitable Trades</div>
-                        </div>
-                        <div class="stat-card">
-                            <div class="stat-value" id="losing-trades">0</div>
-                            <div class="stat-label">Losing Trades</div>
-                        </div>
-                        <div class="stat-card">
-                            <div class="stat-value" id="expectancy">$0</div>
-                            <div class="stat-label">Expectancy per Trade</div>
-                        </div>
-                        <div class="stat-card">
-                            <div class="stat-value" id="total-fees">$0</div>
-                            <div class="stat-label">Total Fees</div>
-                        </div>
-                        <div class="stat-card">
-                            <div class="stat-value" id="trading-days">0</div>
-                            <div class="stat-label">Trading Days</div>
-                        </div>
-                        <div class="stat-card">
-                            <div class="stat-value" id="avg-trades-per-day">0</div>
-                            <div class="stat-label">Avg Trades/Day</div>
-                        </div>
-                        <div class="stat-card">
-                            <div class="stat-value" id="best-day">$0</div>
-                            <div class="stat-label">Best Day</div>
-                        </div>
-                        <div class="stat-card">
-                            <div class="stat-value" id="worst-day">$0</div>
-                            <div class="stat-label">Worst Day</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Settings Tab -->
-        <div id="settings" class="tab-content">
-            <div class="form-section">
-                <h3>⚙️ Settings</h3>
-                <p>Settings and configuration options will be added here.</p>
+                    <button type="submit" class="btn btn-primary" style="margin-top: 20px;">Save Trade</button>
+                </form>
             </div>
         </div>
     </div>
 
-    <!-- Photo Modal -->
-    <div id="photo-modal" class="photo-modal">
-        <span class="close" onclick="closePhotoModal()">&times;</span>
-        <div class="photo-modal-content">
-            <img id="modal-photo" src="" alt="Trade Photo">
-        </div>
-    </div>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.0/dist/umd/supabase.min.js"></script>
+    <script>
+        // Configuration
+        const SUPABASE_URL = 'https://drmgbjqdlmmtvkdxyqxf.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRybWdianFkbG1tdHZrZHh5cXhmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQyMjUwMTEsImV4cCI6MjA2OTgwMTAxMX0.B7hZkBv7Yv6cWjjM8wYo2VWSx8paLzv7k9WSQXjehdM';
 
-<script>
-// Debug logging
-let debugLog = [];
-function debug(message) {
-    const timestamp = new Date().toLocaleTimeString();
-    const logMessage = `[${timestamp}] ${message}`;
-    console.log(logMessage);
-    debugLog.push(logMessage);
-    
-    const debugPanel = document.getElementById('debug-log');
-    if (debugPanel) {
-        debugPanel.innerHTML = debugLog.slice(-8).join('<br>');
-    }
-}
+        // Global variables
+        let supabaseClient = null;
+        let user = null;
+        let trades = [];
+        let isSignUp = false;
+        let currentCalendarDate = new Date();
 
-debug('🚀 Trade Buddy Starting...');
-
-// Configuration
-const SUPABASE_URL = 'https://drmgbjqdlmmtvkdxyqxf.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRybWdianFkbG1tdHZrZHh5cXhmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQyMjUwMTEsImV4cCI6MjA2OTgwMTAxMX0.B7hZkBv7Yv6cWjjM8wYo2VWSx8paLzv7k9WSQXjehdM';
-
-// Global variables
-let supabaseClient = null;
-let user = null;
-let isSignUp = false;
-let trades = [];
-let accounts = [];
-let syncStatus = 'synced';
-let currentPhotos = [];
-let tradingPlan = {};
-let currentCalendarDate = new Date();
-
-debug('✅ Variables initialized');
-
-// Initialize the application
-async function initApp() {
-    debug('🚀 Initializing application...');
-    
-    try {
-        await new Promise(resolve => setTimeout(resolve, 100));
-        
-        const supabaseReady = await initSupabase();
-        if (!supabaseReady) {
-            debug('❌ Supabase initialization failed');
-            return;
-        }
-        
-        const authReady = setupAuth();
-        if (!authReady) {
-            debug('❌ Auth setup failed');
-            return;
-        }
-        
-        setupAuthListener();
-        
-        debug('✅ Application initialization complete');
-        
-    } catch (error) {
-        debug(`💥 Fatal initialization error: ${error.message}`);
-        showNotification(`Fatal error: ${error.message}`, 'error');
-    }
-}
-
-// Notification function
-function showNotification(message, type = 'success') {
-    debug(`📢 Notification: ${message} (${type})`);
-    
-    const existing = document.querySelectorAll('.notification');
-    existing.forEach(n => n.remove());
-    
-    const notification = document.createElement('div');
-    notification.className = `notification ${type}`;
-    notification.textContent = message;
-    document.body.appendChild(notification);
-
-    setTimeout(() => {
-        if (notification.parentNode) {
-            notification.remove();
-        }
-    }, 5000);
-}
-
-// Sync status management
-function updateSyncStatus(status) {
-    debug(`🔄 Sync status: ${status}`);
-    syncStatus = status;
-    const indicator = document.getElementById('sync-indicator');
-    const statusText = document.getElementById('sync-status-text');
-    
-    if (indicator && statusText) {
-        indicator.className = `sync-indicator ${status}`;
-        switch (status) {
-            case 'synced':
-                statusText.textContent = 'Syncing...';
-                break;
-            case 'error':
-                statusText.textContent = 'Error';
-                break;
-        }
-    }
-}
-
-// Initialize Supabase
-async function initSupabase() {
-    debug('📦 Checking for Supabase library...');
-    
-    if (typeof window.supabase === 'undefined') {
-        debug('❌ Supabase library not found');
-        showNotification('Supabase library failed to load', 'error');
-        return false;
-    }
-    
-    debug('✅ Supabase library found');
-    
-    try {
-        supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-        debug('✅ Supabase client created');
-        
-        const { data, error } = await supabaseClient.auth.getSession();
-        if (error) {
-            debug(`❌ Connection test failed: ${error.message}`);
-            showNotification(`Connection error: ${error.message}`, 'error');
-            return false;
-        }
-        
-        debug('✅ Supabase connection successful');
-        
-        if (data.session) {
-            debug(`👤 Found existing session: ${data.session.user.email}`);
-            user = data.session.user;
-            showMainApp();
-            return true;
-        } else {
-            debug('👤 No existing session');
-            showAuthScreen();
-            return true;
-        }
-        
-    } catch (error) {
-        debug(`❌ Supabase initialization error: ${error.message}`);
-        showNotification(`Initialization error: ${error.message}`, 'error');
-        return false;
-    }
-}
-
-// Setup authentication
-function setupAuth() {
-    debug('🔐 Setting up authentication...');
-    
-    const authForm = document.getElementById('auth-form');
-    const emailInput = document.getElementById('auth-email');
-    const passwordInput = document.getElementById('auth-password');
-    const submitBtn = document.getElementById('auth-submit');
-    const toggleLink = document.getElementById('auth-toggle-link');
-    
-    if (!authForm || !emailInput || !passwordInput || !submitBtn || !toggleLink) {
-        debug('❌ Missing auth form elements');
-        return false;
-    }
-    
-    debug('✅ Auth form elements found');
-    
-    authForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        debug('📝 Auth form submitted');
-        
-        const email = emailInput.value.trim();
-        const password = passwordInput.value;
-        
-        if (!email || !password) {
-            showNotification('Please fill in all fields', 'error');
-            return;
-        }
-        
-        if (!supabaseClient) {
-            showNotification('Authentication service not ready', 'error');
-            return;
-        }
-        
-        const originalText = submitBtn.textContent;
-        submitBtn.disabled = true;
-        submitBtn.textContent = isSignUp ? 'Signing up...' : 'Signing in...';
-        
-        try {
-            debug(`🔑 Attempting ${isSignUp ? 'sign up' : 'sign in'}...`);
+        // Initialize Supabase
+        async function initSupabase() {
+            console.log('Initializing Supabase...');
             
-            let result;
-            if (isSignUp) {
-                result = await supabaseClient.auth.signUp({ email, password });
-            } else {
-                result = await supabaseClient.auth.signInWithPassword({ email, password });
+            if (typeof window.supabase === 'undefined') {
+                console.error('Supabase library not loaded!');
+                showNotification('Failed to load Supabase library', 'error');
+                return false;
             }
             
-            if (result.error) {
-                throw result.error;
-            }
-            
-            if (result.data?.user) {
-                debug('✅ Authentication successful');
-                user = result.data.user;
-                showMainApp();
-            }
-            
-        } catch (error) {
-            debug(`💥 Auth failed: ${error.message}`);
-            showNotification(error.message, 'error');
-        } finally {
-            submitBtn.disabled = false;
-            submitBtn.textContent = originalText;
-        }
-    });
-    
-    toggleLink.addEventListener('click', (e) => {
-        e.preventDefault();
-        isSignUp = !isSignUp;
-        
-        const toggleDiv = document.querySelector('.auth-toggle');
-        if (isSignUp) {
-            submitBtn.textContent = 'Sign Up';
-            toggleDiv.innerHTML = 'Already have an account? <a id="auth-toggle-link">Sign in</a>';
-        } else {
-            submitBtn.textContent = 'Sign In';
-            toggleDiv.innerHTML = 'Don\'t have an account? <a id="auth-toggle-link">Sign up</a>';
-        }
-        
-        const newToggleLink = document.getElementById('auth-toggle-link');
-        if (newToggleLink) {
-            newToggleLink.addEventListener('click', arguments.callee);
-        }
-    });
-    
-    debug('✅ Authentication setup complete');
-    return true;
-}
-
-// Show auth screen
-function showAuthScreen() {
-    debug('🔐 Showing authentication screen');
-    
-    const authContainer = document.getElementById('auth-container');
-    const mainContainer = document.getElementById('main-container');
-    
-    if (authContainer && mainContainer) {
-        authContainer.style.display = 'block';
-        mainContainer.style.display = 'none';
-    }
-}
-
-// Show main app
-function showMainApp() {
-    debug('🏠 Showing main application');
-    
-    const authContainer = document.getElementById('auth-container');
-    const mainContainer = document.getElementById('main-container');
-    const userEmailElement = document.getElementById('user-email');
-    
-    if (authContainer && mainContainer) {
-        authContainer.style.display = 'none';
-        mainContainer.style.display = 'block';
-        
-        if (userEmailElement && user?.email) {
-            userEmailElement.textContent = user.email;
-        }
-        
-        debug('✅ Main app displayed');
-        setupMainApp();
-        loadData();
-        showNotification('Welcome to Trade Buddy!', 'success');
-    }
-}
-
-// Setup main app functionality
-function setupMainApp() {
-    debug('⚙️ Setting up main app...');
-    
-    const navTabs = document.querySelectorAll('.nav-tab');
-    navTabs.forEach(tab => {
-        tab.addEventListener('click', function() {
-            const tabId = this.getAttribute('data-tab');
-            showTab(tabId);
-        });
-    });
-    
-    const tradeForm = document.getElementById('trade-form');
-    if (tradeForm) {
-        tradeForm.addEventListener('submit', saveTrade);
-    }
-    
-    const dateInput = document.getElementById('date');
-    if (dateInput) {
-        const now = new Date();
-        now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
-        dateInput.value = now.toISOString().slice(0, 16);
-    }
-    
-    const logoutBtn = document.getElementById('logout-btn');
-    if (logoutBtn) {
-        logoutBtn.addEventListener('click', async () => {
-            debug('🚪 Logout clicked');
             try {
-                await supabaseClient.auth.signOut();
-                user = null;
-                showAuthScreen();
-                showNotification('Signed out successfully', 'success');
-            } catch (error) {
-                showNotification(`Logout error: ${error.message}`, 'error');
-            }
-        });
-    }
-    
-    // Dashboard account selector
-    const dashboardAccountSelector = document.getElementById('dashboard-account-selector');
-    if (dashboardAccountSelector) {
-        dashboardAccountSelector.addEventListener('change', updateDashboard);
-    }
-    
-    // Calendar year selector
-    const calendarYearSelector = document.getElementById('calendar-year-selector');
-    if (calendarYearSelector) {
-        calendarYearSelector.addEventListener('change', changeCalendarYear);
-    }
-    
-    setupPhotoUpload();
-    setupYearSelector();
-    
-    debug('✅ Main app setup complete');
-}
-
-// Auth state change listener
-function setupAuthListener() {
-    if (supabaseClient) {
-        supabaseClient.auth.onAuthStateChange((event, session) => {
-            debug(`🔄 Auth state change: ${event}`);
-            
-            if (event === 'SIGNED_IN' && session) {
-                user = session.user;
-                debug(`✅ User signed in: ${user.email}`);
-                showMainApp();
-            } else if (event === 'SIGNED_OUT') {
-                user = null;
-                debug('👋 User signed out');
-                showAuthScreen();
-            }
-        });
-        debug('✅ Auth state listener setup');
-    }
-}
-
-// Tab switching
-function showTab(tabId) {
-    debug(`🔄 Switching to tab: ${tabId}`);
-    
-    document.querySelectorAll('.tab-content').forEach(tab => {
-        tab.classList.remove('active');
-    });
-    
-    document.querySelectorAll('.nav-tab').forEach(tab => {
-        tab.classList.remove('active');
-    });
-    
-    const activeTab = document.getElementById(tabId);
-    const activeNavTab = document.querySelector(`[data-tab="${tabId}"]`);
-    
-    if (activeTab && activeNavTab) {
-        activeTab.classList.add('active');
-        activeNavTab.classList.add('active');
-        
-        if (tabId === 'dashboard') {
-            updateDashboard();
-        } else if (tabId === 'statistics') {
-            updateStatistics();
-        } else if (tabId === 'calendar') {
-            updateCalendar();
-        }
-    }
-}
-
-// Calendar Functions
-function previousMonth() {
-    currentCalendarDate.setMonth(currentCalendarDate.getMonth() - 1);
-    updateCalendar();
-}
-
-function nextMonth() {
-    currentCalendarDate.setMonth(currentCalendarDate.getMonth() + 1);
-    updateCalendar();
-}
-
-function goToCurrentMonth() {
-    currentCalendarDate = new Date();
-    updateCalendar();
-    setupYearSelector();
-}
-
-function changeCalendarYear() {
-    const yearSelector = document.getElementById('calendar-year-selector');
-    const selectedYear = parseInt(yearSelector.value);
-    currentCalendarDate.setFullYear(selectedYear);
-    updateCalendar();
-}
-
-function setupYearSelector() {
-    const yearSelector = document.getElementById('calendar-year-selector');
-    const currentYear = currentCalendarDate.getFullYear();
-    
-    // Get range of years from trades
-    const tradeYears = trades.map(trade => new Date(trade.date).getFullYear());
-    const minYear = tradeYears.length > 0 ? Math.min(...tradeYears) : currentYear;
-    const maxYear = Math.max(currentYear + 1, tradeYears.length > 0 ? Math.max(...tradeYears) : currentYear);
-    
-    let yearOptions = '';
-    for (let year = minYear; year <= maxYear; year++) {
-        const selected = year === currentYear ? 'selected' : '';
-        yearOptions += `<option value="${year}" ${selected}>${year}</option>`;
-    }
-    
-    yearSelector.innerHTML = yearOptions;
-}
-
-function updateCalendar() {
-    const year = currentCalendarDate.getFullYear();
-    const month = currentCalendarDate.getMonth();
-    
-    // Update month/year display
-    const monthNames = ["January", "February", "March", "April", "May", "June",
-        "July", "August", "September", "October", "November", "December"];
-    document.getElementById('calendar-month-year').textContent = `${monthNames[month]} ${year}`;
-
-    // Calculate calendar grid
-    const firstDay = new Date(year, month, 1);
-    const lastDay = new Date(year, month + 1, 0);
-    
-    // Generate calendar HTML
-    let calendarHTML = '';
-    
-    // Add day headers starting with Sunday (US calendar format)
-    const dayHeaders = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-    dayHeaders.forEach(day => {
-        calendarHTML += `<div class="calendar-header">${day}</div>`;
-    });
-
-    // Adjust to start from Sunday of the week containing the 1st
-    const startDate = new Date(firstDay);
-    startDate.setDate(startDate.getDate() - firstDay.getDay());
-    
-    // Adjust to end on Saturday of the week containing the last day
-    const endDate = new Date(lastDay);
-    endDate.setDate(endDate.getDate() + (6 - lastDay.getDay()));
-
-    // Generate calendar days
-    const currentDate = new Date(startDate);
-    const today = new Date();
-    const todayDateString = today.toDateString();
-
-    while (currentDate <= endDate) {
-        const isCurrentMonth = currentDate.getMonth() === month;
-        const isToday = currentDate.toDateString() === todayDateString;
-        const dayClasses = ['calendar-day'];
-        
-        if (!isCurrentMonth) dayClasses.push('other-month');
-        if (isToday) dayClasses.push('today');
-
-        // Get trades for this day
-        const dayTrades = getTradesForDate(currentDate);
-        const closedTrades = dayTrades.filter(t => t.exit_price || t.exitPrice);
-        const totalPnL = closedTrades.reduce((sum, t) => sum + (t.pnl || 0), 0);
-        const tradeCount = dayTrades.length;
-
-        // Determine day type and styling
-        let dayContent = '';
-        if (tradeCount > 0) {
-            if (closedTrades.length > 0) {
-                if (totalPnL > 0) {
-                    dayClasses.push('profit-day');
-                } else if (totalPnL < 0) {
-                    dayClasses.push('loss-day');
+                supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+                console.log('Supabase client created');
+                
+                // Check for existing session
+                const { data: { session } } = await supabaseClient.auth.getSession();
+                if (session) {
+                    console.log('Found existing session');
+                    user = session.user;
+                    showMainApp();
                 } else {
-                    dayClasses.push('mixed-day');
+                    console.log('No existing session');
                 }
                 
-                const pnlClass = totalPnL > 0 ? 'profit' : totalPnL < 0 ? 'loss' : 'mixed';
-                dayContent = `
-                    <div class="calendar-day-pnl ${pnlClass}">
-                        ${totalPnL >= 0 ? '+' : ''}${totalPnL.toFixed(2)}
-                    </div>
-                    <div class="calendar-day-trades">
-                        ${tradeCount} trade${tradeCount !== 1 ? 's' : ''}
-                    </div>
-                `;
-            } else {
-                // Only open trades
-                dayClasses.push('mixed-day');
-                dayContent = `
-                    <div class="calendar-day-pnl mixed">Open Trades</div>
-                    <div class="calendar-day-trades">
-                        ${tradeCount} trade${tradeCount !== 1 ? 's' : ''}
-                    </div>
-                `;
+                // Setup auth listener
+                supabaseClient.auth.onAuthStateChange((event, session) => {
+                    console.log('Auth state changed:', event);
+                    if (event === 'SIGNED_IN' && session) {
+                        user = session.user;
+                        showMainApp();
+                    } else if (event === 'SIGNED_OUT') {
+                        user = null;
+                        showAuthScreen();
+                    }
+                });
+                
+                return true;
+            } catch (error) {
+                console.error('Supabase init error:', error);
+                return false;
             }
-        } else if (isCurrentMonth) {
-            dayContent = '<div class="calendar-no-trades">No Trades</div>';
         }
 
-        calendarHTML += `
-            <div class="${dayClasses.join(' ')}" onclick="showDayDetails('${currentDate.toISOString()}')" 
-                 onmouseenter="showDayTooltip(event, '${currentDate.toISOString()}')"
-                 onmouseleave="hideDayTooltip()">
-                <div class="calendar-day-number">${currentDate.getDate()}</div>
-                ${dayContent}
-            </div>
-        `;
-
-        currentDate.setDate(currentDate.getDate() + 1);
-    }
-
-    document.getElementById('calendar-grid').innerHTML = calendarHTML;
-    
-    // Update monthly summary
-    updateMonthlySummary(year, month);
-}
-
-function getTradesForDate(date) {
-    const dateStr = date.toDateString();
-    return trades.filter(trade => {
-        const tradeDate = new Date(trade.date);
-        return tradeDate.toDateString() === dateStr;
-    }).sort((a, b) => new Date(a.date) - new Date(b.date));
-}
-
-function showDayTooltip(event, dateString) {
-    const date = new Date(dateString);
-    const dayTrades = getTradesForDate(date);
-    
-    if (dayTrades.length === 0) return;
-    
-    let tooltipContent = `<strong>${date.toLocaleDateString()}</strong><br><br>`;
-    
-    dayTrades.forEach(trade => {
-        const account = accounts.find(acc => acc.id === (trade.account_id || trade.accountId));
-        const status = (trade.exit_price || trade.exitPrice) ? ((trade.pnl || 0) >= 0 ? '✅' : '❌') : '⏳';
-        const pnlText = (trade.exit_price || trade.exitPrice) ? `${(trade.pnl || 0) >= 0 ? '+' : ''}${(trade.pnl || 0).toFixed(2)}` : 'Open';
-        
-        tooltipContent += `${status} ${trade.symbol} ${trade.side} - ${pnlText}<br>`;
-        if (account) tooltipContent += `&nbsp;&nbsp;&nbsp;${account.name}<br>`;
-    });
-    
-    // Create or update tooltip
-    let tooltip = document.getElementById('calendar-tooltip');
-    if (!tooltip) {
-        tooltip = document.createElement('div');
-        tooltip.id = 'calendar-tooltip';
-        tooltip.className = 'calendar-trade-tooltip';
-        document.body.appendChild(tooltip);
-    }
-    
-    tooltip.innerHTML = tooltipContent;
-    tooltip.style.left = event.pageX + 10 + 'px';
-    tooltip.style.top = event.pageY - 10 + 'px';
-    tooltip.classList.add('show');
-}
-
-function hideDayTooltip() {
-    const tooltip = document.getElementById('calendar-tooltip');
-    if (tooltip) {
-        tooltip.classList.remove('show');
-    }
-}
-
-function showDayDetails(dateString) {
-    const date = new Date(dateString);
-    const dayTrades = getTradesForDate(date);
-    
-    if (dayTrades.length === 0) {
-        showNotification('No trades on this day', 'error');
-        return;
-    }
-    
-    // Show trades for this day
-    showNotification(`Found ${dayTrades.length} trade(s) on ${date.toLocaleDateString()}`, 'info');
-    
-    // You could switch to trades tab and filter by date here if needed
-    // For now, just showing a notification
-}
-
-function updateMonthlySummary(year, month) {
-    const monthTrades = trades.filter(trade => {
-        const tradeDate = new Date(trade.date);
-        return tradeDate.getFullYear() === year && tradeDate.getMonth() === month;
-    });
-
-    const closedTrades = monthTrades.filter(t => t.exit_price || t.exitPrice);
-    const winningTrades = closedTrades.filter(t => (t.pnl || 0) > 0);
-    const losingTrades = closedTrades.filter(t => (t.pnl || 0) < 0);
-    const totalPnL = closedTrades.reduce((sum, t) => sum + (t.pnl || 0), 0);
-    const winRate = closedTrades.length > 0 ? (winningTrades.length / closedTrades.length * 100) : 0;
-    const avgWin = winningTrades.length > 0 ? winningTrades.reduce((sum, t) => sum + (t.pnl || 0), 0) / winningTrades.length : 0;
-    const avgLoss = losingTrades.length > 0 ? Math.abs(losingTrades.reduce((sum, t) => sum + (t.pnl || 0), 0) / losingTrades.length) : 0;
-
-    const summaryHTML = `
-        <div class="calendar-summary-item">
-            <div class="calendar-summary-value">${monthTrades.length}</div>
-            <div class="calendar-summary-label">Total Trades</div>
-        </div>
-        <div class="calendar-summary-item ${totalPnL >= 0 ? 'profit' : 'loss'}">
-            <div class="calendar-summary-value ${totalPnL >= 0 ? 'profit' : 'loss'}">
-                ${totalPnL >= 0 ? '+' : ''}${totalPnL.toFixed(2)}
-            </div>
-            <div class="calendar-summary-label">Total Monthly P&L</div>
-        </div>
-        <div class="calendar-summary-item">
-            <div class="calendar-summary-value">${winRate.toFixed(1)}%</div>
-            <div class="calendar-summary-label">Win Rate</div>
-        </div>
-        <div class="calendar-summary-item profit">
-            <div class="calendar-summary-value profit">+${avgWin.toFixed(2)}</div>
-            <div class="calendar-summary-label">Avg Winning Trade</div>
-        </div>
-        <div class="calendar-summary-item loss">
-            <div class="calendar-summary-value loss">-${avgLoss.toFixed(2)}</div>
-            <div class="calendar-summary-label">Avg Losing Trade</div>
-        </div>
-    `;
-
-    document.getElementById('calendar-summary').innerHTML = summaryHTML;
-}
-
-// Load data function
-async function loadData() {
-    debug('📊 Loading user data...');
-    updateSyncStatus('syncing');
-    
-    try {
-        // Load trades
-        try {
-            const { data: tradesData, error: tradesError } = await supabaseClient
-                .from('trades')
-                .select('*')
-                .eq('user_id', user.id)
-                .order('date', { ascending: false });
+        // Setup authentication
+        function setupAuth() {
+            const authForm = document.getElementById('auth-form');
+            const toggleLink = document.getElementById('auth-toggle-link');
+            
+            authForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
                 
-            if (tradesError) {
-                console.log('Trades load error:', tradesError);
-                trades = [];
-            } else {
-                trades = tradesData || [];
-            }
-        } catch (e) {
-            console.log('Trades table might not exist yet');
-            trades = [];
-        }
-        
-        // Load accounts
-        try {
-            const { data: accountsData, error: accountsError } = await supabaseClient
-                .from('accounts')
-                .select('*')
-                .eq('user_id', user.id);
+                const email = document.getElementById('auth-email').value;
+                const password = document.getElementById('auth-password').value;
+                const submitBtn = document.getElementById('auth-submit');
                 
-            if (accountsError) {
-                console.log('Accounts load error:', accountsError);
-                accounts = [];
-            } else {
-                accounts = accountsData || [];
-            }
-        } catch (e) {
-            console.log('Accounts table might not exist yet');
-            accounts = [];
-        }
-        
-        // Load trading plan
-        try {
-            const { data: planData, error: planError } = await supabaseClient
-                .from('trading_plans')
-                .select('*')
-                .eq('user_id', user.id)
-                .single();
+                submitBtn.disabled = true;
+                submitBtn.textContent = isSignUp ? 'Signing up...' : 'Signing in...';
                 
-            if (planError) {
-                if (planError.code !== 'PGRST116' && planError.code !== 'PGRST103') {
-                    console.log('Trading plan load error:', planError);
+                try {
+                    let result;
+                    if (isSignUp) {
+                        result = await supabaseClient.auth.signUp({ email, password });
+                    } else {
+                        result = await supabaseClient.auth.signInWithPassword({ email, password });
+                    }
+                    
+                    if (result.error) throw result.error;
+                    
+                    if (result.data.user) {
+                        user = result.data.user;
+                        showNotification(isSignUp ? 'Account created!' : 'Signed in!', 'success');
+                        showMainApp();
+                    }
+                } catch (error) {
+                    console.error('Auth error:', error);
+                    showNotification(error.message, 'error');
+                } finally {
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = isSignUp ? 'Sign Up' : 'Sign In';
                 }
-                tradingPlan = {};
-            } else {
-                tradingPlan = planData || {};
-            }
-        } catch (e) {
-            console.log('Trading plan table might not exist yet');
-            tradingPlan = {};
+            });
+            
+            toggleLink.addEventListener('click', (e) => {
+                e.preventDefault();
+                isSignUp = !isSignUp;
+                document.getElementById('auth-submit').textContent = isSignUp ? 'Sign Up' : 'Sign In';
+                toggleLink.textContent = isSignUp ? 'Sign in' : 'Sign up';
+                toggleLink.parentElement.innerHTML = isSignUp ? 
+                    'Already have an account? <a href="#" id="auth-toggle-link" style="color: #007bff; text-decoration: none;">Sign in</a>' :
+                    'Don\'t have an account? <a href="#" id="auth-toggle-link" style="color: #007bff; text-decoration: none;">Sign up</a>';
+                setupAuth(); // Re-bind the event
+            });
         }
-        
-        debug(`✅ Loaded: ${trades.length} trades, ${accounts.length} accounts, trading plan: ${Object.keys(tradingPlan).length > 0 ? 'Yes' : 'No'}`);
-        
-        // Update UI
-        setTimeout(() => {
-            updateDashboard();
-            updateTradesDisplay();
-            updateAccountList();
-            updateTradingPlanForm();
-            updateTradingPlanTooltip();
-            updateStatistics();
+
+        // Show/hide screens
+        function showAuthScreen() {
+            document.getElementById('auth-container').style.display = 'block';
+            document.getElementById('main-container').style.display = 'none';
+        }
+
+        function showMainApp() {
+            document.getElementById('auth-container').style.display = 'none';
+            document.getElementById('main-container').style.display = 'block';
+            if (user) {
+                document.getElementById('user-email').textContent = user.email;
+            }
+            loadData();
             updateCalendar();
-            setupYearSelector();
-        }, 100);
-        
-        updateSyncStatus('synced');
-        debug('✅ Data loaded successfully');
-    } catch (error) {
-        debug(`❌ Error loading data: ${error.message}`);
-        updateSyncStatus('error');
-        showNotification('Error loading data', 'error');
-    }
-}
-
-// Update dashboard
-function updateDashboard() {
-    debug('📊 Updating dashboard...');
-    
-    const selectedAccountId = document.getElementById('dashboard-account-selector')?.value;
-    let filteredTrades = trades;
-    let selectedAccount = null;
-
-    if (selectedAccountId) {
-        filteredTrades = trades.filter(trade => (trade.account_id || trade.accountId) == selectedAccountId);
-        selectedAccount = accounts.find(acc => acc.id == selectedAccountId);
-    }
-
-    // Update account balance display
-    if (selectedAccount) {
-        const accountTrades = trades.filter(trade => (trade.account_id || trade.accountId) == selectedAccountId);
-        const closedTrades = accountTrades.filter(trade => trade.exit_price || trade.exitPrice);
-        const totalPnL = closedTrades.reduce((sum, trade) => sum + (trade.pnl || 0), 0);
-        const totalReturn = selectedAccount.starting_balance || selectedAccount.startingBalance > 0 ? 
-            (totalPnL / (selectedAccount.starting_balance || selectedAccount.startingBalance) * 100) : 0;
-        
-        document.getElementById('dashboard-balance').textContent = 
-            `${selectedAccount.currency} ${(selectedAccount.current_balance || selectedAccount.currentBalance || 0).toLocaleString()}`;
-        document.getElementById('dashboard-balance-change').textContent = 
-            `${totalReturn >= 0 ? '+' : ''}${totalReturn.toFixed(2)}% total return (${totalPnL >= 0 ? '+' : ''}${totalPnL.toFixed(2)})`;
-    } else {
-        // Show total portfolio value
-        const totalValue = accounts.reduce((sum, acc) => sum + (acc.current_balance || acc.currentBalance || 0), 0);
-        const totalStarting = accounts.reduce((sum, acc) => sum + (acc.starting_balance || acc.startingBalance || 0), 0);
-        const totalReturn = totalStarting > 0 ? ((totalValue - totalStarting) / totalStarting * 100) : 0;
-        
-        document.getElementById('dashboard-balance').textContent = `${totalValue.toLocaleString()}`;
-        document.getElementById('dashboard-balance-change').textContent = 
-            totalStarting > 0 ? `${totalReturn >= 0 ? '+' : ''}${totalReturn.toFixed(2)}% total return` : 'No accounts yet';
-    }
-
-    // Update quick stats
-    const closedTrades = filteredTrades.filter(t => t.exit_price || t.exitPrice);
-    const winningTrades = closedTrades.filter(t => (t.pnl || 0) > 0);
-    const losingTrades = closedTrades.filter(t => (t.pnl || 0) < 0);
-
-    const totalTrades = filteredTrades.length;
-    const winRate = closedTrades.length > 0 ? (winningTrades.length / closedTrades.length * 100) : 0;
-    const totalPnL = closedTrades.reduce((sum, t) => sum + (t.pnl || 0), 0);
-
-    // Calculate profit factor
-    const avgWin = winningTrades.length > 0 ? winningTrades.reduce((sum, t) => sum + (t.pnl || 0), 0) / winningTrades.length : 0;
-    const avgLoss = losingTrades.length > 0 ? Math.abs(losingTrades.reduce((sum, t) => sum + (t.pnl || 0), 0) / losingTrades.length) : 0;
-    const profitFactor = avgLoss > 0 ? avgWin / avgLoss : 0;
-
-    // Calculate average RRR from trades with both stop loss and take profit
-    const tradesWithRRR = filteredTrades.filter(t => (t.stop_loss || t.stopLoss) && (t.take_profit || t.takeProfit) && (t.entry_price || t.entryPrice));
-    let avgRRR = 0;
-    
-    if (tradesWithRRR.length > 0) {
-        const totalRRR = tradesWithRRR.reduce((sum, trade) => {
-            const entryPrice = trade.entry_price || trade.entryPrice;
-            const stopLoss = trade.stop_loss || trade.stopLoss;
-            const takeProfit = trade.take_profit || trade.takeProfit;
-            const risk = Math.abs(entryPrice - stopLoss);
-            const reward = Math.abs(takeProfit - entryPrice);
-            return risk > 0 ? sum + (reward / risk) : sum;
-        }, 0);
-        avgRRR = totalRRR / tradesWithRRR.length;
-    }
-
-    // Calculate plan adherence
-    const tradesWithPlanData = filteredTrades.filter(t => t.hasOwnProperty('followed_plan') || t.hasOwnProperty('followedPlan'));
-    const planAdherence = tradesWithPlanData.length > 0 ? 
-        (tradesWithPlanData.filter(t => t.followed_plan || t.followedPlan).length / tradesWithPlanData.length * 100) : 0;
-
-    // Update dashboard elements if they exist
-    const dashElements = {
-        'dash-total-trades': totalTrades,
-        'dash-win-rate': winRate.toFixed(1) + '%',
-        'dash-total-pnl': 'ced';
-                break;
-            case 'syncing':
-                statusText.textContent = 'Syn + totalPnL.toFixed(2),
-        'dash-profit-factor': profitFactor.toFixed(2),
-        'dash-avg-rrr': avgRRR > 0 ? `1:${avgRRR.toFixed(2)}` : 'N/A',
-        'dash-plan-adherence': planAdherence.toFixed(1) + '%'
-    };
-
-    Object.entries(dashElements).forEach(([id, value]) => {
-        const element = document.getElementById(id);
-        if (element) {
-            element.textContent = value;
         }
-    });
 
-    // Update recent trades
-    updateRecentTrades(filteredTrades);
-}
+        // Tab switching
+        function setupTabs() {
+            document.querySelectorAll('.nav-tab').forEach(tab => {
+                tab.addEventListener('click', function() {
+                    document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+                    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+                    
+                    this.classList.add('active');
+                    const tabId = this.getAttribute('data-tab');
+                    document.getElementById(tabId).classList.add('active');
+                    
+                    if (tabId === 'calendar') {
+                        updateCalendar();
+                    }
+                });
+            });
+        }
 
-function updateRecentTrades(filteredTrades) {
-    const container = document.getElementById('recent-trades-list');
-    if (!container) return;
-    
-    const recentTrades = filteredTrades.slice(0, 5);
+        // Calendar functions
+        function previousMonth() {
+            currentCalendarDate.setMonth(currentCalendarDate.getMonth() - 1);
+            updateCalendar();
+        }
 
-    if (recentTrades.length === 0) {
-        container.innerHTML = '<div class="empty-state"><p>No recent trades</p></div>';
-        return;
-    }
+        function nextMonth() {
+            currentCalendarDate.setMonth(currentCalendarDate.getMonth() + 1);
+            updateCalendar();
+        }
 
-    container.innerHTML = recentTrades.map(trade => {
-        const account = accounts.find(acc => acc.id === (trade.account_id || trade.accountId));
-        return `
-            <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px; border-bottom: 1px solid #e9ecef; transition: background 0.2s;">
-                <div>
-                    <div style="font-weight: 600; color: #2c3e50;">${trade.symbol}</div>
-                    <div style="font-size: 12px; color: #6c757d;">
-                        ${new Date(trade.date).toLocaleDateString()} • 
-                        <span style="font-size: 12px; padding: 2px 6px; border-radius: 4px; color: white; background: ${trade.side === 'Long' ? '#28a745' : '#dc3545'};">${trade.side}</span>
-                        ${account ? ` • ${account.name}` : ''}
-                    </div>
-                </div>
-                <div style="text-align: right;">
-                    <div class="${(trade.pnl || 0) >= 0 ? 'profit' : 'loss'}">
-                        ${(trade.pnl || 0) >= 0 ? '+' : ''}${Math.abs(trade.pnl || 0).toFixed(2)}
-                    </div>
-                    <div style="font-size: 12px; color: #6c757d;">
-                        ${trade.status || (trade.exit_price || trade.exitPrice ? 'Closed' : 'Open')}
-                    </div>
-                </div>
-            </div>
-        `;
-    }).join('');
-}
+        function goToCurrentMonth() {
+            currentCalendarDate = new Date();
+            updateCalendar();
+        }
 
-// Other needed functions
-function updateTradesDisplay() {
-    // Implementation for trades display
-    debug('Updating trades display...');
-}
+        function updateCalendar() {
+            const year = currentCalendarDate.getFullYear();
+            const month = currentCalendarDate.getMonth();
+            const monthNames = ["January", "February", "March", "April", "May", "June",
+                "July", "August", "September", "October", "November", "December"];
+            
+            document.getElementById('calendar-month-year').textContent = `${monthNames[month]} ${year}`;
+            
+            const firstDay = new Date(year, month, 1);
+            const lastDay = new Date(year, month + 1, 0);
+            const startDate = new Date(firstDay);
+            startDate.setDate(startDate.getDate() - firstDay.getDay());
+            
+            let calendarHTML = '';
+            const dayHeaders = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+            dayHeaders.forEach(day => {
+                calendarHTML += `<div class="calendar-header">${day}</div>`;
+            });
+            
+            const currentDate = new Date(startDate);
+            const today = new Date();
+            
+            for (let i = 0; i < 42; i++) {
+                const isCurrentMonth = currentDate.getMonth() === month;
+                const isToday = currentDate.toDateString() === today.toDateString();
+                const dayTrades = trades.filter(t => new Date(t.date).toDateString() === currentDate.toDateString());
+                
+                let dayClass = 'calendar-day';
+                if (!isCurrentMonth) dayClass += ' other-month';
+                if (isToday) dayClass += ' today';
+                if (dayTrades.length > 0) {
+                    const totalPnL = dayTrades.reduce((sum, t) => sum + (t.pnl || 0), 0);
+                    if (totalPnL > 0) dayClass += ' profit-day';
+                    else if (totalPnL < 0) dayClass += ' loss-day';
+                }
+                
+                calendarHTML += `<div class="${dayClass}">
+                    <div class="calendar-day-number">${currentDate.getDate()}</div>
+                    ${dayTrades.length > 0 ? `<div style="font-size: 11px;">${dayTrades.length} trade(s)</div>` : ''}
+                </div>`;
+                
+                currentDate.setDate(currentDate.getDate() + 1);
+            }
+            
+            document.getElementById('calendar-grid').innerHTML = calendarHTML;
+        }
 
-function updateAccountList() {
-    // Implementation for account list
-    debug('Updating account list...');
-}
+        // Load data
+        async function loadData() {
+            if (!user) return;
+            
+            try {
+                const { data, error } = await supabaseClient
+                    .from('trades')
+                    .select('*')
+                    .eq('user_id', user.id)
+                    .order('date', { ascending: false });
+                
+                if (error) throw error;
+                
+                trades = data || [];
+                document.getElementById('trades-count').textContent = `Total Trades: ${trades.length}`;
+                updateCalendar();
+            } catch (error) {
+                console.error('Error loading trades:', error);
+            }
+        }
 
-function updateTradingPlanForm() {
-    // Implementation for trading plan form
-    debug('Updating trading plan form...');
-}
+        // Save trade
+        async function saveTrade(e) {
+            e.preventDefault();
+            
+            const trade = {
+                user_id: user.id,
+                date: document.getElementById('date').value,
+                symbol: document.getElementById('symbol').value,
+                side: document.getElementById('side').value,
+                quantity: parseFloat(document.getElementById('quantity').value),
+                entry_price: parseFloat(document.getElementById('entry-price').value),
+                exit_price: document.getElementById('exit-price').value ? parseFloat(document.getElementById('exit-price').value) : null
+            };
+            
+            if (trade.exit_price) {
+                trade.pnl = trade.side === 'Long' ? 
+                    (trade.exit_price - trade.entry_price) * trade.quantity :
+                    (trade.entry_price - trade.exit_price) * trade.quantity;
+            }
+            
+            try {
+                const { error } = await supabaseClient.from('trades').insert(trade);
+                if (error) throw error;
+                
+                showNotification('Trade saved!', 'success');
+                document.getElementById('trade-form').reset();
+                loadData();
+            } catch (error) {
+                console.error('Error saving trade:', error);
+                showNotification('Error saving trade', 'error');
+            }
+        }
 
-function updateTradingPlanTooltip() {
-    // Implementation for trading plan tooltip
-    debug('Updating trading plan tooltip...');
-}
+        // Logout
+        async function logout() {
+            await supabaseClient.auth.signOut();
+        }
 
-function updateStatistics() {
-    // Implementation for statistics
-    debug('Updating statistics...');
-}
+        // Notification
+        function showNotification(message, type = 'success') {
+            const notification = document.createElement('div');
+            notification.className = `notification ${type}`;
+            notification.textContent = message;
+            document.body.appendChild(notification);
+            setTimeout(() => notification.remove(), 3000);
+        }
 
-function updateAccountDropdown() {
-    // Implementation for account dropdown
-    debug('Updating account dropdown...');
-}
-
-// Photo functions
-function setupPhotoUpload() {
-    debug('Setting up photo upload...');
-}
-
-function handleFileSelect(e) {
-    // Implementation
-}
-
-function handleFiles(files) {
-    // Implementation
-}
-
-function updatePhotoPreview() {
-    // Implementation
-}
-
-function openPhotoModal(imageSrc) {
-    document.getElementById('modal-photo').src = imageSrc;
-    document.getElementById('photo-modal').style.display = 'block';
-}
-
-function closePhotoModal() {
-    document.getElementById('photo-modal').style.display = 'none';
-}
-
-function removePhoto(photoId) {
-    currentPhotos = currentPhotos.filter(photo => photo.id != photoId);
-    updatePhotoPreview();
-}
-
-// Trade save function
-async function saveTrade(e) {
-    e.preventDefault();
-    debug('💾 Saving trade...');
-    showNotification('Saving trade...', 'info');
-    // Full implementation would go here
-}
-
-// Account functions
-function showAddAccountForm() {
-    const form = document.getElementById('add-account-form');
-    if (form) form.style.display = 'block';
-}
-
-function cancelAddAccount() {
-    const form = document.getElementById('add-account-form');
-    if (form) form.style.display = 'none';
-}
-
-async function addAccount() {
-    debug('Adding account...');
-    showNotification('Adding account...', 'info');
-    // Full implementation would go here
-}
-
-async function deleteAccount(id) {
-    debug('Deleting account...');
-    // Full implementation would go here
-}
-
-async function deleteTrade(id) {
-    debug('Deleting trade...');
-    // Full implementation would go here
-}
-
-// Trading plan functions
-async function saveTradingPlan() {
-    debug('Saving trading plan...');
-    showNotification('Saving trading plan...', 'info');
-    // Full implementation would go here
-}
-
-async function clearTradingPlan() {
-    debug('Clearing trading plan...');
-    // Full implementation would go here
-}
-
-// Global functions for onclick events
-window.showAddAccountForm = showAddAccountForm;
-window.cancelAddAccount = cancelAddAccount;
-window.addAccount = addAccount;
-window.deleteAccount = deleteAccount;
-window.deleteTrade = deleteTrade;
-window.openPhotoModal = openPhotoModal;
-window.closePhotoModal = closePhotoModal;
-window.removePhoto = removePhoto;
-window.saveTradingPlan = saveTradingPlan;
-window.clearTradingPlan = clearTradingPlan;
-window.previousMonth = previousMonth;
-window.nextMonth = nextMonth;
-window.goToCurrentMonth = goToCurrentMonth;
-window.showDayDetails = showDayDetails;
-window.showDayTooltip = showDayTooltip;
-window.hideDayTooltip = hideDayTooltip;
-
-// DOM ready event
-document.addEventListener('DOMContentLoaded', () => {
-    debug('📄 DOM Content Loaded');
-    setTimeout(() => {
-        debug('🚀 Starting app initialization...');
-        initApp();
-    }, 100);
-});
-
-// Safety check - run if DOM already loaded
-if (document.readyState === 'loading') {
-    debug('📄 Document still loading...');
-} else {
-    debug('📄 Document already loaded');
-    setTimeout(() => {
-        debug('🚀 Starting immediate initialization...');
-        initApp();
-    }, 100);
-}
-
-debug('📜 Trade Buddy with Calendar script setup complete');ced';
-                break;
-            case 'syncing':
-                statusText.textContent = 'Syn
+        // Initialize app
+        window.addEventListener('DOMContentLoaded', async () => {
+            console.log('Starting Trade Buddy...');
+            
+            await initSupabase();
+            setupAuth();
+            setupTabs();
+            
+            // Setup trade form
+            document.getElementById('trade-form').addEventListener('submit', saveTrade);
+            
+            // Set default date
+            const now = new Date();
+            now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+            document.getElementById('date').value = now.toISOString().slice(0, 16);
+        });
+    </script>
+</body>
+</html>
