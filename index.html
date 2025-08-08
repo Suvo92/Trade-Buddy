@@ -54,6 +54,7 @@
             display: flex;
             align-items: center;
             gap: 10px;
+            z-index: 100;
         }
 
         .user-info {
@@ -139,17 +140,6 @@
 
         .tab-content.active {
             display: block;
-        }
-
-        .tab-content:not(.active) {
-            display: none !important;
-            visibility: hidden !important;
-            opacity: 0 !important;
-            height: 0 !important;
-            overflow: hidden !important;
-            position: absolute !important;
-            left: -99999px !important;
-            top: -99999px !important;
         }
 
         @keyframes fadeIn {
@@ -630,6 +620,101 @@
             z-index: 1001;
         }
 
+        .calendar-controls {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 2px;
+            background: #e9ecef;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
+            margin-bottom: 20px;
+        }
+
+        .calendar-header {
+            background: #495057;
+            color: white;
+            padding: 12px 8px;
+            text-align: center;
+            font-weight: 600;
+            font-size: 13px;
+            text-transform: uppercase;
+        }
+
+        .calendar-day {
+            background: white;
+            min-height: 80px;
+            padding: 8px;
+            position: relative;
+            border: none;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .calendar-day:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            z-index: 1;
+        }
+
+        .calendar-day.other-month {
+            background: #f8f9fa;
+            color: #adb5bd;
+        }
+
+        .calendar-day.today {
+            border: 2px solid #007bff;
+            background: #e7f3ff;
+        }
+
+        .calendar-day.profit-day {
+            background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%);
+            border-left: 4px solid #28a745;
+        }
+
+        .calendar-day.loss-day {
+            background: linear-gradient(135deg, #f8d7da 0%, #f1b0b7 100%);
+            border-left: 4px solid #dc3545;
+        }
+
+        .calendar-day-number {
+            font-weight: 600;
+            font-size: 14px;
+            color: #495057;
+            margin-bottom: 4px;
+        }
+
+        .calendar-day-pnl {
+            font-weight: 700;
+            font-size: 13px;
+            margin-bottom: 2px;
+        }
+
+        .calendar-day-pnl.profit {
+            color: #155724;
+        }
+
+        .calendar-day-pnl.loss {
+            color: #721c24;
+        }
+
+        .calendar-day-trades {
+            font-size: 11px;
+            color: #6c757d;
+            margin-top: auto;
+        }
+
         @media (max-width: 768px) {
             .container {
                 margin: 10px;
@@ -684,13 +769,13 @@
             <div class="auth-container">
                 <div class="user-info" id="user-info">
                     <span id="user-email"></span>
-                    <button class="btn btn-secondary btn-small" onclick="signOut()">Sign Out</button>
+                    <button class="btn btn-secondary btn-small" id="sign-out-btn">Sign Out</button>
                 </div>
                 <div class="auth-form" id="auth-form">
                     <input type="email" id="email" placeholder="Email" required>
                     <input type="password" id="password" placeholder="Password" required>
-                    <button onclick="signIn()">Sign In</button>
-                    <button onclick="signUp()">Sign Up</button>
+                    <button id="sign-in-btn">Sign In</button>
+                    <button id="sign-up-btn">Sign Up</button>
                 </div>
             </div>
             
@@ -705,6 +790,7 @@
             <button class="nav-tab" data-tab="trade-history">Trade History</button>
             <button class="nav-tab" data-tab="accounts">Accounts</button>
             <button class="nav-tab" data-tab="trading-plan">Trading Plan</button>
+            <button class="nav-tab" data-tab="calendar">Calendar</button>
             <button class="nav-tab" data-tab="statistics">Statistics</button>
             <button class="nav-tab" data-tab="settings">Settings</button>
         </div>
@@ -830,7 +916,7 @@
                         <h4>📸 Trade Photos</h4>
                         <p>Add charts, screenshots, or any visual documentation</p>
                         <input type="file" id="photo-input" class="photo-input" multiple accept="image/*">
-                        <button type="button" class="photo-upload-btn" onclick="document.getElementById('photo-input').click()">
+                        <button type="button" class="photo-upload-btn" id="photo-upload-btn">
                             📎 Choose Photos
                         </button>
                         <p style="margin-top: 10px; font-size: 12px; color: #6c757d;">
@@ -860,7 +946,7 @@
                     <select id="filter-strategy">
                         <option value="">All Strategies</option>
                     </select>
-                    <button class="btn btn-secondary" onclick="exportTrades()">📤 Export CSV</button>
+                    <button class="btn btn-secondary" id="export-trades-btn">📤 Export CSV</button>
                 </div>
 
                 <div id="trades-container">
@@ -882,7 +968,7 @@
                     <!-- Accounts will be populated here -->
                 </div>
                 
-                <button type="button" class="btn btn-primary btn-small" onclick="showAddAccountForm()">
+                <button type="button" class="btn btn-primary btn-small" id="add-account-btn">
                     ➕ Add New Account
                 </button>
                 
@@ -912,8 +998,8 @@
                             <input type="number" id="new-account-balance" step="0.01" placeholder="10000.00" required>
                         </div>
                     </div>
-                    <button type="button" class="btn btn-primary" onclick="addAccount()">Add Account</button>
-                    <button type="button" class="btn btn-secondary" onclick="cancelAddAccount()">Cancel</button>
+                    <button type="button" class="btn btn-primary" id="save-account-btn">Add Account</button>
+                    <button type="button" class="btn btn-secondary" id="cancel-account-btn">Cancel</button>
                 </div>
             </div>
         </div>
@@ -946,9 +1032,27 @@
                         </div>
                     </div>
 
-                    <button type="button" class="btn btn-primary" onclick="saveTradingPlan()">💾 Save Trading Plan</button>
-                    <button type="button" class="btn btn-secondary" onclick="clearTradingPlan()">🔄 Clear Plan</button>
+                    <button type="button" class="btn btn-primary" id="save-plan-btn">💾 Save Trading Plan</button>
+                    <button type="button" class="btn btn-secondary" id="clear-plan-btn">🔄 Clear Plan</button>
                 </form>
+            </div>
+        </div>
+
+        <!-- Calendar Tab -->
+        <div id="calendar" class="tab-content">
+            <div class="form-section">
+                <h3>📅 Trading Calendar</h3>
+                <div class="calendar-controls">
+                    <button class="btn btn-secondary btn-small" id="prev-month-btn">&lt;</button>
+                    <h4 id="calendar-month-year" style="display: inline-block; margin: 0 20px;"></h4>
+                    <button class="btn btn-secondary btn-small" id="next-month-btn">&gt;</button>
+                    <button class="btn btn-primary btn-small" id="today-btn" style="margin-left: 20px;">Today</button>
+                </div>
+                <div id="calendar-container">
+                    <div class="calendar-grid" id="calendar-grid">
+                        <!-- Calendar will be generated here -->
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -1013,10 +1117,10 @@
                 <div style="margin-top: 30px;">
                     <h4>Data Management</h4>
                     <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-top: 15px;">
-                        <button class="btn btn-primary" onclick="exportData()">📤 Export All Data</button>
-                        <button class="btn btn-secondary" onclick="document.getElementById('import-file').click()">📥 Import Data</button>
-                        <input type="file" id="import-file" style="display: none;" accept=".json" onchange="importData(event)">
-                        <button class="btn btn-danger" onclick="clearAllData()">🗑️ Clear All Data</button>
+                        <button class="btn btn-primary" id="export-data-btn">📤 Export All Data</button>
+                        <button class="btn btn-secondary" id="import-data-btn">📥 Import Data</button>
+                        <input type="file" id="import-file" style="display: none;" accept=".json">
+                        <button class="btn btn-danger" id="clear-data-btn">🗑️ Clear All Data</button>
                     </div>
                     
                     <div style="margin-top: 20px; padding: 15px; background: #fff3cd; border-radius: 5px;">
@@ -1029,25 +1133,25 @@
                     </div>
                 </div>
 
-                <button class="btn btn-primary" onclick="saveSettings()">💾 Save Settings</button>
+                <button class="btn btn-primary" id="save-settings-btn">💾 Save Settings</button>
             </div>
         </div>
     </div>
 
     <!-- Photo Modal -->
     <div id="photo-modal" class="photo-modal">
-        <span class="close" onclick="closePhotoModal()">&times;</span>
+        <span class="close" id="photo-modal-close">&times;</span>
         <div class="photo-modal-content">
             <img id="modal-photo" src="" alt="Trade Photo">
         </div>
     </div>
 
     <!-- Debug Panel -->
-    <button class="debug-toggle" onclick="toggleDebug()">Debug</button>
+    <button class="debug-toggle" id="debug-toggle">Debug</button>
     <div class="debug-panel" id="debug-panel">
         <h4>Debug Info</h4>
         <div id="debug-content"></div>
-        <button class="btn btn-small" onclick="debug()">Refresh</button>
+        <button class="btn btn-small" id="debug-refresh">Refresh</button>
     </div>
 
     <script>
@@ -1065,6 +1169,7 @@
         let tradingPlan = {};
         let currentPhotos = [];
         let currentEditId = null;
+        let currentCalendarDate = new Date();
 
         // Initialize the application
         document.addEventListener('DOMContentLoaded', function() {
@@ -1074,6 +1179,7 @@
             setupPhotoUpload();
             setCurrentDateTime();
             updateStorageIndicator();
+            updateCalendar();
             console.log('App initialized successfully');
         });
 
@@ -1184,6 +1290,7 @@
             document.getElementById('auth-form').style.display = 'none';
             document.getElementById('user-info').style.display = 'flex';
             document.getElementById('user-email').textContent = currentUser.email;
+            updateStorageIndicator();
         }
 
         function showAuthInterface() {
@@ -1191,6 +1298,7 @@
             document.getElementById('user-info').style.display = 'none';
             document.getElementById('email').value = '';
             document.getElementById('password').value = '';
+            updateStorageIndicator();
         }
 
         // Data loading functions
@@ -1225,7 +1333,7 @@
                     .eq('user_id', currentUser.id)
                     .single();
 
-                if (planError && planError.code !== 'PGRST116') { // PGRST116 = no rows returned
+                if (planError && planError.code !== 'PGRST116') {
                     throw planError;
                 }
                 tradingPlan = planData || {};
@@ -1239,6 +1347,11 @@
 
         // Event listeners setup
         function setupEventListeners() {
+            // Authentication buttons
+            document.getElementById('sign-in-btn').addEventListener('click', signIn);
+            document.getElementById('sign-up-btn').addEventListener('click', signUp);
+            document.getElementById('sign-out-btn').addEventListener('click', signOut);
+
             // Tab switching
             document.querySelectorAll('.nav-tab').forEach(tab => {
                 tab.addEventListener('click', function() {
@@ -1253,12 +1366,41 @@
                 saveTrade();
             });
 
+            // Account management
+            document.getElementById('add-account-btn').addEventListener('click', showAddAccountForm);
+            document.getElementById('save-account-btn').addEventListener('click', addAccount);
+            document.getElementById('cancel-account-btn').addEventListener('click', cancelAddAccount);
+
+            // Trading plan
+            document.getElementById('save-plan-btn').addEventListener('click', saveTradingPlan);
+            document.getElementById('clear-plan-btn').addEventListener('click', clearTradingPlan);
+
             // Filter events
             document.getElementById('search-symbol').addEventListener('input', updateTradesDisplay);
             document.getElementById('filter-strategy').addEventListener('change', updateTradesDisplay);
             document.getElementById('filter-date-from').addEventListener('change', updateTradesDisplay);
             document.getElementById('filter-date-to').addEventListener('change', updateTradesDisplay);
             document.getElementById('filter-account').addEventListener('change', updateTradesDisplay);
+
+            // Export/Import
+            document.getElementById('export-trades-btn').addEventListener('click', exportTrades);
+            document.getElementById('export-data-btn').addEventListener('click', exportData);
+            document.getElementById('import-data-btn').addEventListener('click', () => document.getElementById('import-file').click());
+            document.getElementById('import-file').addEventListener('change', importData);
+            document.getElementById('clear-data-btn').addEventListener('click', clearAllData);
+            document.getElementById('save-settings-btn').addEventListener('click', saveSettings);
+
+            // Photo modal
+            document.getElementById('photo-modal-close').addEventListener('click', closePhotoModal);
+
+            // Debug
+            document.getElementById('debug-toggle').addEventListener('click', toggleDebug);
+            document.getElementById('debug-refresh').addEventListener('click', debug);
+
+            // Calendar
+            document.getElementById('prev-month-btn').addEventListener('click', previousMonth);
+            document.getElementById('next-month-btn').addEventListener('click', nextMonth);
+            document.getElementById('today-btn').addEventListener('click', goToCurrentMonth);
 
             // Auth state changes
             supabase.auth.onAuthStateChange((event, session) => {
@@ -1308,6 +1450,8 @@
                     updateAccountsDisplay();
                 } else if (tabId === 'statistics') {
                     updateStatistics();
+                } else if (tabId === 'calendar') {
+                    updateCalendar();
                 }
                 
                 console.log('Tab switched successfully to:', tabId);
@@ -1532,21 +1676,17 @@
 
             try {
                 const { data, error } = await supabase
-                    .from('accounts')
-                    .update({ 
-                        current_balance: supabase.raw(`current_balance + ${amount}`)
-                    })
-                    .eq('id', accountId)
-                    .eq('user_id', currentUser.id)
-                    .select()
-                    .single();
+                    .rpc('update_account_balance', {
+                        account_id: accountId,
+                        amount: amount
+                    });
 
                 if (error) throw error;
 
                 // Update local accounts array
                 const accountIndex = accounts.findIndex(acc => acc.id === accountId);
                 if (accountIndex !== -1) {
-                    accounts[accountIndex] = data;
+                    accounts[accountIndex].current_balance += amount;
                 }
             } catch (error) {
                 console.error('Error updating account balance:', error);
@@ -1598,7 +1738,9 @@
         function setupPhotoUpload() {
             const photoInput = document.getElementById('photo-input');
             const dropZone = document.getElementById('photo-drop-zone');
+            const photoUploadBtn = document.getElementById('photo-upload-btn');
 
+            photoUploadBtn.addEventListener('click', () => photoInput.click());
             photoInput.addEventListener('change', handleFileSelect);
 
             // Drag and drop functionality
@@ -1678,6 +1820,144 @@
             updatePhotoPreview();
         }
 
+        // Calendar functions
+        function previousMonth() {
+            currentCalendarDate.setMonth(currentCalendarDate.getMonth() - 1);
+            updateCalendar();
+        }
+
+        function nextMonth() {
+            currentCalendarDate.setMonth(currentCalendarDate.getMonth() + 1);
+            updateCalendar();
+        }
+
+        function goToCurrentMonth() {
+            currentCalendarDate = new Date();
+            updateCalendar();
+        }
+
+        function updateCalendar() {
+            const year = currentCalendarDate.getFullYear();
+            const month = currentCalendarDate.getMonth();
+            
+            // Update month/year display
+            const monthNames = ["January", "February", "March", "April", "May", "June",
+                "July", "August", "September", "October", "November", "December"];
+            document.getElementById('calendar-month-year').textContent = `${monthNames[month]} ${year}`;
+
+            // Calculate calendar grid
+            const firstDay = new Date(year, month, 1);
+            const lastDay = new Date(year, month + 1, 0);
+            const startDate = new Date(firstDay);
+            const dayOfWeek = firstDay.getDay();
+            const daysToSubtract = dayOfWeek === 0 ? 6 : dayOfWeek - 1; // Start on Monday
+            startDate.setDate(startDate.getDate() - daysToSubtract);
+            
+            const endDate = new Date(lastDay);
+            const endDayOfWeek = lastDay.getDay();
+            const daysToAdd = endDayOfWeek === 0 ? 0 : 7 - endDayOfWeek;
+            endDate.setDate(endDate.getDate() + daysToAdd);
+
+            // Generate calendar HTML
+            let calendarHTML = '';
+            
+            // Add day headers
+            const dayHeaders = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+            dayHeaders.forEach(day => {
+                calendarHTML += `<div class="calendar-header">${day}</div>`;
+            });
+
+            // Generate calendar days
+            const currentDate = new Date(startDate);
+            const today = new Date();
+            const todayDateString = today.toDateString();
+
+            while (currentDate <= endDate) {
+                const isCurrentMonth = currentDate.getMonth() === month;
+                const isToday = currentDate.toDateString() === todayDateString;
+                const dayClasses = ['calendar-day'];
+                
+                if (!isCurrentMonth) dayClasses.push('other-month');
+                if (isToday) dayClasses.push('today');
+
+                // Get trades for this day
+                const dayTrades = getTradesForDate(currentDate);
+                const closedTrades = dayTrades.filter(t => t.exit_price !== null);
+                const totalPnL = closedTrades.reduce((sum, t) => sum + (t.pnl || 0), 0);
+                const tradeCount = dayTrades.length;
+
+                // Determine day type and styling
+                let dayContent = '';
+                if (tradeCount > 0) {
+                    if (closedTrades.length > 0) {
+                        if (totalPnL > 0) {
+                            dayClasses.push('profit-day');
+                        } else if (totalPnL < 0) {
+                            dayClasses.push('loss-day');
+                        }
+                        
+                        const pnlClass = totalPnL > 0 ? 'profit' : 'loss';
+                        dayContent = `
+                            <div class="calendar-day-pnl ${pnlClass}">
+                                ${totalPnL >= 0 ? '+' : ''}${totalPnL.toFixed(2)}
+                            </div>
+                            <div class="calendar-day-trades">
+                                ${tradeCount} trade${tradeCount !== 1 ? 's' : ''}
+                            </div>
+                        `;
+                    } else {
+                        // Only open trades
+                        dayContent = `
+                            <div class="calendar-day-pnl">Open</div>
+                            <div class="calendar-day-trades">
+                                ${tradeCount} trade${tradeCount !== 1 ? 's' : ''}
+                            </div>
+                        `;
+                    }
+                }
+
+                calendarHTML += `
+                    <div class="${dayClasses.join(' ')}" onclick="showDayDetails('${currentDate.toISOString()}')">
+                        <div class="calendar-day-number">${currentDate.getDate()}</div>
+                        ${dayContent}
+                    </div>
+                `;
+
+                currentDate.setDate(currentDate.getDate() + 1);
+            }
+
+            document.getElementById('calendar-grid').innerHTML = calendarHTML;
+        }
+
+        function getTradesForDate(date) {
+            const dateStr = date.toDateString();
+            return trades.filter(trade => {
+                const tradeDate = new Date(trade.date);
+                return tradeDate.toDateString() === dateStr;
+            }).sort((a, b) => new Date(a.date) - new Date(b.date));
+        }
+
+        function showDayDetails(dateString) {
+            const date = new Date(dateString);
+            const dayTrades = getTradesForDate(date);
+            
+            if (dayTrades.length === 0) {
+                showNotification('No trades on this day', 'error');
+                return;
+            }
+            
+            // Switch to trade history tab and filter by date
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            const dateStr = `${year}-${month}-${day}`;
+            
+            document.getElementById('filter-date-from').value = dateStr;
+            document.getElementById('filter-date-to').value = dateStr;
+            updateTradesDisplay();
+            showTab('trade-history');
+        }
+
         // Display update functions
         function updateAllDisplays() {
             updateAccountDropdowns();
@@ -1686,6 +1966,7 @@
             updateDashboard();
             updateStatistics();
             loadTradingPlanForm();
+            updateCalendar();
         }
 
         function updateDashboard() {
@@ -2055,7 +2336,6 @@
                     const data = JSON.parse(e.target.result);
                     
                     if (confirm('Import data? This will replace all current data.')) {
-                        // Note: In a real implementation, you'd want to upload this data to Supabase
                         showNotification('Import functionality would sync data to cloud', 'success');
                     }
                 } catch (err) {
@@ -2069,7 +2349,6 @@
 
         function clearAllData() {
             if (confirm('Are you sure you want to delete ALL data? This action cannot be undone.')) {
-                // Note: In a real implementation, you'd want to delete from Supabase
                 trades = [];
                 accounts = [];
                 tradingPlan = {};
@@ -2147,27 +2426,12 @@
         }
 
         // Global function assignments for onclick events
-        window.signIn = signIn;
-        window.signUp = signUp;
-        window.signOut = signOut;
-        window.showAddAccountForm = showAddAccountForm;
-        window.cancelAddAccount = cancelAddAccount;
-        window.addAccount = addAccount;
-        window.deleteAccount = deleteAccount;
-        window.saveTradingPlan = saveTradingPlan;
-        window.clearTradingPlan = clearTradingPlan;
+        window.openPhotoModal = openPhotoModal;
+        window.removePhoto = removePhoto;
         window.editTrade = editTrade;
         window.deleteTrade = deleteTrade;
-        window.exportTrades = exportTrades;
-        window.exportData = exportData;
-        window.importData = importData;
-        window.clearAllData = clearAllData;
-        window.saveSettings = saveSettings;
-        window.openPhotoModal = openPhotoModal;
-        window.closePhotoModal = closePhotoModal;
-        window.removePhoto = removePhoto;
-        window.toggleDebug = toggleDebug;
-        window.debug = debug;
+        window.deleteAccount = deleteAccount;
+        window.showDayDetails = showDayDetails;
     </script>
 </body>
 </html>
