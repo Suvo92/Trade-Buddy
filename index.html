@@ -1798,10 +1798,20 @@
             currentPhotos.forEach(photo => {
                 const photoItem = document.createElement('div');
                 photoItem.className = 'photo-item';
-                photoItem.innerHTML = `
-                    <img src="${photo.data}" alt="${photo.name}" onclick="openPhotoModal('${photo.data}')">
-                    <button class="remove-photo" onclick="removePhoto('${photo.id}')" title="Remove photo">×</button>
-                `;
+                
+                const img = document.createElement('img');
+                img.src = photo.data;
+                img.alt = photo.name;
+                img.onclick = function() { openPhotoModal(photo.data); };
+                
+                const removeBtn = document.createElement('button');
+                removeBtn.className = 'remove-photo';
+                removeBtn.title = 'Remove photo';
+                removeBtn.innerHTML = '×';
+                removeBtn.onclick = function() { removePhoto(photo.id); };
+                
+                photoItem.appendChild(img);
+                photoItem.appendChild(removeBtn);
                 preview.appendChild(photoItem);
             });
         }
@@ -1887,7 +1897,7 @@
                 const tradeCount = dayTrades.length;
 
                 // Determine day type and styling
-                let dayContent = '';
+                let dayContentHTML = '';
                 if (tradeCount > 0) {
                     if (closedTrades.length > 0) {
                         if (totalPnL > 0) {
@@ -1897,9 +1907,10 @@
                         }
                         
                         const pnlClass = totalPnL > 0 ? 'profit' : 'loss';
-                        dayContent = `
+                        const pnlText = totalPnL >= 0 ? '+' : '';
+                        dayContentHTML = `
                             <div class="calendar-day-pnl ${pnlClass}">
-                                ${totalPnL >= 0 ? '+' : ''}${totalPnL.toFixed(2)}
+                                ${pnlText}${totalPnL.toFixed(2)}
                             </div>
                             <div class="calendar-day-trades">
                                 ${tradeCount} trade${tradeCount !== 1 ? 's' : ''}
@@ -1907,7 +1918,7 @@
                         `;
                     } else {
                         // Only open trades
-                        dayContent = `
+                        dayContentHTML = `
                             <div class="calendar-day-pnl">Open</div>
                             <div class="calendar-day-trades">
                                 ${tradeCount} trade${tradeCount !== 1 ? 's' : ''}
@@ -1916,12 +1927,15 @@
                     }
                 }
 
-                calendarHTML += `
-                    <div class="${dayClasses.join(' ')}" onclick="showDayDetails('${currentDate.toISOString()}')">
-                        <div class="calendar-day-number">${currentDate.getDate()}</div>
-                        ${dayContent}
-                    </div>
+                const dayElement = document.createElement('div');
+                dayElement.className = dayClasses.join(' ');
+                dayElement.onclick = function() { showDayDetails(currentDate.toISOString()); };
+                dayElement.innerHTML = `
+                    <div class="calendar-day-number">${currentDate.getDate()}</div>
+                    ${dayContentHTML}
                 `;
+                
+                calendarHTML += dayElement.outerHTML;
 
                 currentDate.setDate(currentDate.getDate() + 1);
             }
